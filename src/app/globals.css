@@ -1,0 +1,180 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 4%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+}
+
+/* Dark mode specific styles */
+.dark .sankey-link {
+  opacity: 0.7 !important;
+}
+
+.dark .sankey-link:hover {
+  opacity: 1 !important;
+}
+
+.dark .sankey-node {
+  opacity: 0.9 !important;
+}
+
+.dark .sankey-node:hover {
+  opacity: 1 !important;
+}
+
+/* Improved dark mode card gradients */
+.dark .bg-card {
+  background: linear-gradient(to bottom right, hsl(240 10% 6%), hsl(240 10% 4%));
+}
+
+.dark .border {
+  border-color: hsl(240 10% 12% / 0.5);
+}
+
+/* Improved dark mode hover states */
+.dark .hover\:bg-accent:hover {
+  background-color: hsl(240 3.7% 18.9%);
+}
+
+/* Better dark mode shadows */
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px hsl(240 10% 2% / 0.3),
+              0 4px 6px -4px hsl(240 10% 2% / 0.3);
+}
+
+/* Better dark mode scrollbar */
+.dark ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: hsl(240 10% 6%);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(240 3.7% 15.9%);
+  border-radius: 5px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(240 3.7% 20.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-300 dark:from-neutral-100 dark:via-neutral-200 dark:to-neutral-100;
+  }
+
+  .hero-gradient {
+    @apply bg-black relative overflow-hidden;
+  }
+
+  .hero-gradient::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-b from-transparent via-neutral-900/10 to-neutral-800/20;
+  }
+
+  .card-gradient {
+    @apply bg-black/40 backdrop-blur-sm;
+  }
+
+  .card-border {
+    @apply border border-white/10 hover:border-white/20 transition-colors;
+  }
+
+  .card-hover {
+    @apply hover:bg-black/60 transition-all duration-300;
+  }
+
+  .glow {
+    @apply relative;
+  }
+
+  .glow::before {
+    content: '';
+    @apply absolute -inset-0.5 bg-gradient-to-r from-neutral-800/30 via-neutral-600/30 to-neutral-800/30 rounded-lg opacity-0 transition-opacity duration-300 blur;
+  }
+
+  .glow:hover::before {
+    @apply opacity-20;
+  }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
