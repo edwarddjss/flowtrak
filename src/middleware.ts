@@ -1,40 +1,100 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
+
   const { data: { session } } = await supabase.auth.getSession()
 
-  // Check if the request is to a protected route
-  const isProtectedRoute = req.nextUrl.pathname.startsWith('/dashboard') || 
-                          req.nextUrl.pathname.startsWith('/applications') || 
-                          req.nextUrl.pathname.startsWith('/settings') ||
-                          (req.nextUrl.pathname.startsWith('/api/') && 
-                           !req.nextUrl.pathname.startsWith('/api/auth'))
+  // Protected routes
+  const protectedPaths = [
+    '/dashboard',
+    '/applications',
+    '/settings',
+  ]
 
-  if (isProtectedRoute && !session) {
-    return NextResponse.redirect(new URL('/auth/signin', req.url))
+  const isProtectedPath = protectedPaths.some(path => 
+    request.nextUrl.pathname.startsWith(path)
+  )
+
+  // Auth routes that should redirect to dashboard if logged in
+  const authPaths = ['/auth/signin', '/auth/sign-up']
+  const isAuthPath = authPaths.some(path => 
+    request.nextUrl.pathname.startsWith(path)
+  )
+
+  // Special handling for onboarding
+  if (request.nextUrl.pathname === '/onboarding') {
+    if (!session) {
+      return NextResponse.redirect(new URL('/auth/signin', request.url))
+    }
+    
+    // Check if user is already onboarded
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_onboarded')
+      .eq('id', session.user.id)
+      .single()
+
+    if (profile?.is_onboarded) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    return response
   }
 
-  // If user is a new signup and hasn't completed onboarding
-  if (session?.user.user_metadata?.isNewUser === true) {
-    // Allow access to onboarding page
-    if (req.nextUrl.pathname === '/onboarding') {
-      return res
-    }
-    // Redirect to onboarding for all other authenticated routes
-    if (isProtectedRoute) {
-      return NextResponse.redirect(new URL('/onboarding', req.url))
-    }
+  // Redirect if path requires auth and user is not logged in
+  if (isProtectedPath && !session) {
+    return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 
-  return res
+  // Redirect to dashboard if user is logged in and trying to access auth pages
+  if (isAuthPath && session) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  return response
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|auth/callback).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public (public files)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
 }

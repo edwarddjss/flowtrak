@@ -5,32 +5,76 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Application } from "@/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useRouter } from "next/navigation"
+import { ApplicationDialog } from "@/components/application-dialog"
 
 export default function ApplicationPage({ params }: { params: { id: string } }) {
   const [application, setApplication] = useState<Application | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(true)
+  const router = useRouter()
+  const supabase = createClientComponentClient()
 
   useEffect(() => {
     const fetchApplication = async () => {
-      const supabase = createClientComponentClient()
+      try {
+        setLoading(true)
+        setError(null)
+
+        const { data, error: supabaseError } = await supabase
+          .from('applications')
+          .select('*')
+          .eq('id', params.id)
+          .single()
+
+        if (supabaseError) {
+          throw new Error(supabaseError.message)
+        }
+
+        if (!data) {
+          throw new Error('Application not found')
+        }
+
+        setApplication(data)
+      } catch (err) {
+        console.error('Error fetching application:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load application')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (params.id) {
+      fetchApplication()
+    }
+  }, [params.id, supabase])
+
+  const handleRefresh = async () => {
+    if (!application) return []
+    
+    try {
       const { data, error } = await supabase
         .from('applications')
         .select('*')
         .eq('id', params.id)
         .single()
 
-      if (!error && data) {
+      if (error) throw error
+      if (data) {
         setApplication(data)
+        return [data]
       }
-      setLoading(false)
+      return []
+    } catch (err) {
+      console.error('Error refreshing application:', err)
+      return []
     }
-
-    fetchApplication()
-  }, [params.id])
+  }
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="container mx-auto py-6 max-w-7xl space-y-4">
         <Skeleton className="h-8 w-[200px]" />
         <Card>
           <CardHeader>
@@ -46,57 +90,41 @@ export default function ApplicationPage({ params }: { params: { id: string } }) 
     )
   }
 
-  if (!application) {
+  if (error) {
     return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <p className="text-muted-foreground">Application not found</p>
+      <div className="container mx-auto py-6 max-w-7xl">
+        <Card className="p-6">
+          <CardHeader>
+            <CardTitle>Error</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-destructive">{error}</p>
+            <button 
+              onClick={() => router.push('/dashboard/applications')}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Return to Applications
+            </button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{application.company}</h1>
-        <div className={`px-3 py-1 rounded-full text-sm ${
-          application.status === 'applied' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' :
-          application.status === 'interviewing' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' :
-          application.status === 'offer' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' :
-          application.status === 'rejected' ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300' :
-          'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-        }`}>
-          {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-        </div>
-      </div>
+  if (!application) {
+    return null
+  }
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Application Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <div className="font-medium">Position</div>
-            <div className="text-muted-foreground">{application.position}</div>
-          </div>
-          <div>
-            <div className="font-medium">Applied Date</div>
-            <div className="text-muted-foreground">
-              {new Date(application.applied_date).toLocaleDateString()}
-            </div>
-          </div>
-          {application.location && (
-            <div>
-              <div className="font-medium">Location</div>
-              <div className="text-muted-foreground">{application.location}</div>
-            </div>
-          )}
-          {application.notes && (
-            <div>
-              <div className="font-medium">Notes</div>
-              <div className="text-muted-foreground whitespace-pre-wrap">{application.notes}</div>
-            </div>
-          )}
-        </CardContent>
+  return (
+    <div className="container mx-auto py-6 max-w-7xl space-y-8">
+      <Card className="p-0 overflow-hidden">
+        <ApplicationDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          mode="edit"
+          initialData={application}
+          onSuccess={handleRefresh}
+        />
       </Card>
     </div>
   )
