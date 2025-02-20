@@ -1,5 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
+import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -11,8 +10,7 @@ export async function GET(request: Request) {
   const isSignUp = requestUrl.searchParams.get('signup') === 'true'
 
   if (code) {
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = createClient()
     const { data: { user } } = await supabase.auth.exchangeCodeForSession(code)
 
     // Only set isNewUser flag for new signups
