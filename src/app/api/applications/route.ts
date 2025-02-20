@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { Request } from 'next/server'
 import { z } from 'zod'
 
 // Use Node runtime since we're using Supabase

@@ -6,7 +6,6 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { SessionProvider } from '../components/providers'
 import { ThemeProvider } from '@/components/theme-provider'
-import { ChatBot } from '../components/chat-bot' // Assuming ChatBot is located in this file
 import './globals.css'
 import '../styles/animations.css'
 
@@ -62,7 +61,6 @@ export default function RootLayout({
           <SessionProvider>
             <QueryProvider>
               {children}
-              <ChatBot />
               <Toaster />
               <Analytics />
               <SpeedInsights />
