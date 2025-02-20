@@ -16,6 +16,11 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   swcMinify: true,
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['localhost:3000', 'flowtrak-oa1fb0puw-edwards-projects-0c1a274c.vercel.app'],
+    },
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [

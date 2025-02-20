@@ -9,8 +9,10 @@ export async function middleware(req: NextRequest) {
 
   // Check if the request is to a protected route
   const isProtectedRoute = req.nextUrl.pathname.startsWith('/dashboard') || 
-                          req.nextUrl.pathname.startsWith('/api/') || 
-                          req.nextUrl.pathname.startsWith('/(authenticated)')
+                          req.nextUrl.pathname.startsWith('/applications') || 
+                          req.nextUrl.pathname.startsWith('/settings') ||
+                          (req.nextUrl.pathname.startsWith('/api/') && 
+                           !req.nextUrl.pathname.startsWith('/api/auth'))
 
   if (isProtectedRoute && !session) {
     return NextResponse.redirect(new URL('/auth/signin', req.url))
@@ -33,9 +35,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones we explicitly skip
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|auth/callback).*)',
   ],
 }
