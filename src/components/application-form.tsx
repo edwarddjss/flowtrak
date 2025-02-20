@@ -47,75 +47,67 @@ const formSchema = z.object({
   previous_status: z.enum(['applied', 'interviewing', 'offer', 'accepted', 'rejected']).optional()
 })
 
-interface FormValues {
-  company: string
-  position: string
-  location: string
-  status: 'applied' | 'interviewing' | 'offer' | 'accepted' | 'rejected'
-  applied_date: Date
-  interview_date?: Date | null
-  salary?: string
-  notes?: string
-  link?: string
-  previous_status?: 'applied' | 'interviewing' | 'offer' | 'accepted' | 'rejected'
-}
-
 interface ApplicationFormProps {
-  initialData?: (Partial<FormValues> & { id?: string }) | undefined
+  initialData?: Partial<Application>
   mode?: 'create' | 'edit'
   onSuccess?: () => void
 }
 
 export function ApplicationForm({ initialData, mode = 'create', onSuccess }: ApplicationFormProps) {
   const { toast } = useToast()
-  const form = useForm<FormValues>({
+  const supabase = createClientComponentClient()
+  
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      company: initialData?.company ?? '',
-      position: initialData?.position ?? '',
-      location: initialData?.location ?? '',
-      status: initialData?.status ?? 'applied',
+      company: initialData?.company || '',
+      position: initialData?.position || '',
+      location: initialData?.location || '',
+      status: initialData?.status || 'applied',
       applied_date: initialData?.applied_date ? new Date(initialData.applied_date) : new Date(),
-      interview_date: initialData?.interview_date ? new Date(initialData.interview_date) : null,
-      salary: initialData?.salary?.toString() ?? '',
-      notes: initialData?.notes ?? '',
-      link: initialData?.link ?? '',
-      previous_status: initialData?.previous_status,
-    },
+      salary: initialData?.salary?.toString() || '',
+      notes: initialData?.notes || '',
+      link: initialData?.link || '',
+      previous_status: initialData?.status
+    }
   })
 
-  async function onSubmit(data: FormValues) {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const response = await fetch('/api/applications' + (initialData?.id ? `?id=${initialData.id}` : ''), {
-        method: initialData?.id ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...data,
-          applied_date: data.applied_date.toISOString(),
-          salary: data.salary && data.salary.length > 0 ? parseFloat(data.salary) : null,
-          notes: data.notes && data.notes.length > 0 ? data.notes : null,
-          link: data.link && data.link.length > 0 ? data.link : null,
-        }),
-      })
+      if (mode === 'edit' && initialData?.id) {
+        const { error } = await supabase
+          .from('applications')
+          .update({
+            ...values,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', initialData.id)
 
-      if (!response.ok) {
-        throw new Error('Failed to save application')
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('applications')
+          .insert({
+            ...values,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+
+        if (error) throw error
       }
 
       toast({
-        title: initialData?.id ? 'Application updated' : 'Application created',
-        description: `Successfully ${initialData?.id ? 'updated' : 'created'} application for ${data.company}`,
+        title: `Application ${mode === 'create' ? 'created' : 'updated'} successfully`,
+        description: `Your job application for ${values.position} at ${values.company} has been ${mode === 'create' ? 'added' : 'updated'}.`
       })
 
       onSuccess?.()
     } catch (error) {
-      console.error('Error saving application:', error)
+      console.error('Error submitting form:', error)
       toast({
         title: 'Error',
-        description: 'Failed to save application. Please try again.',
-        variant: 'destructive',
+        description: 'There was a problem saving your application. Please try again.',
+        variant: 'destructive'
       })
     }
   }

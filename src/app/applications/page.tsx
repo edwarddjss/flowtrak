@@ -6,7 +6,7 @@ import { ApplicationDialog } from '@/components/application-dialog'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Brain } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import type { Application } from '@/types'
 
 export default function EditApplicationPage({
@@ -14,28 +14,72 @@ export default function EditApplicationPage({
 }: {
   params: { id: string }
 }) {
+  const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(true)
   const [application, setApplication] = useState<Application | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClientComponentClient()
 
   const refreshApplication = async () => {
-    const { data } = await supabase
-      .from('applications')
-      .select('*')
-      .eq('id', params.id)
-      .single()
+    try {
+      setLoading(true)
+      setError(null)
+
+      const { data, error: supabaseError } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('id', params.id)
+        .single()
+      
+      if (supabaseError) {
+        throw new Error(supabaseError.message)
+      }
     
-    if (data) {
-      setApplication(data)
+      if (data) {
+        setApplication(data)
+        setOpen(false)
+        return [data]
+      } else {
+        throw new Error('Application not found')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load application')
+      return []
+    } finally {
+      setLoading(false)
     }
-    setOpen(false)
-    return data ? [data] : []
   }
 
   useEffect(() => {
-    refreshApplication()
+    if (params.id) {
+      refreshApplication()
+    }
   }, [params.id])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-6 max-w-7xl">
+        <Card className="p-6">
+          <p className="text-destructive">{error}</p>
+          <button 
+            onClick={() => router.push('/applications')}
+            className="mt-4 text-sm text-muted-foreground hover:text-foreground"
+          >
+            Return to Applications
+          </button>
+        </Card>
+      </div>
+    )
+  }
 
   if (!application) {
     return null
@@ -62,7 +106,11 @@ export default function EditApplicationPage({
         </TabsContent>
         
         <TabsContent value="notes">
-          {/* Notes content */}
+          <Card className="p-6">
+            <p className="text-sm text-muted-foreground">
+              {application.notes || 'No notes added yet.'}
+            </p>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

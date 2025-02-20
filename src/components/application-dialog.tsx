@@ -49,52 +49,32 @@ export function ApplicationDialog({
     }
   }, [open])
 
-  const processedInitialData: (Partial<FormValues> & { id?: string }) | undefined = initialData
-    ? {
-        company: initialData.company,
-        position: initialData.position,
-        location: initialData.location,
-        status: initialData.status,
-        applied_date: initialData.applied_date ? new Date(initialData.applied_date) : new Date(),
-        salary: initialData.salary?.toString(),
-        notes: initialData.notes ?? undefined,
-        link: initialData.link ?? undefined,
-        id: initialData.id,
-      }
-    : undefined
-
-  const handleOpenChange = (open: boolean) => {
-    if (onOpenChange) {
-      onOpenChange(open)
-    } else {
-      setDialogOpen(open)
-    }
+  const handleOpenChange = (newOpen: boolean) => {
+    setDialogOpen(newOpen)
+    onOpenChange?.(newOpen)
   }
 
   return (
-    <Dialog open={open ?? dialogOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button>
-            {mode === 'create' ? 'Add Application' : 'Edit Application'}
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
-            {mode === 'create' ? 'Add New Application' : 'Edit Application'}
+            {mode === 'create' ? 'Add Application' : 'Edit Application'}
           </DialogTitle>
           <DialogDescription>
             {mode === 'create'
               ? 'Add a new job application to track.'
-              : 'Edit the details of your job application.'}
+              : 'Update the details of your job application.'}
           </DialogDescription>
         </DialogHeader>
         <ApplicationForm
-          initialData={processedInitialData}
+          initialData={initialData}
           mode={mode}
-          onSuccess={onSuccess}
+          onSuccess={() => {
+            handleOpenChange(false)
+            onSuccess?.()
+          }}
         />
       </DialogContent>
     </Dialog>
