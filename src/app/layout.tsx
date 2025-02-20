@@ -6,6 +6,7 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { SessionProvider } from '../components/providers'
 import { ThemeProvider } from '@/components/theme-provider'
+import { Providers } from '@/components/providers'
 import './globals.css'
 import '../styles/animations.css'
 
@@ -14,9 +15,9 @@ const geist = GeistSans
 export const metadata: Metadata = {
   title: {
     template: '%s | FlowTrak',
-    default: 'FlowTrak - Track Your Job Applications'
+    default: 'FlowTrak - Job Application Tracking'
   },
-  description: 'Track your job applications and career journey with FlowTrak. Visualize your progress, manage applications, and stay organized in your job search.',
+  description: 'Track and manage your job applications efficiently',
   keywords: ['job tracking', 'career management', 'application tracker', 'job search'],
   authors: [{ name: 'FlowTrak' }],
   creator: 'FlowTrak',
@@ -32,7 +33,8 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'FlowTrak - Track Your Job Applications',
     description: 'Track your job applications and career journey with FlowTrak'
-  }
+  },
+  metadataBase: new URL('https://flowtrak.vercel.app'),
 }
 
 export const viewport: Viewport = {
@@ -60,10 +62,12 @@ export default function RootLayout({
         >
           <SessionProvider>
             <QueryProvider>
-              {children}
-              <Toaster />
-              <Analytics />
-              <SpeedInsights />
+              <Providers>
+                {children}
+                <Toaster />
+                <Analytics />
+                <SpeedInsights />
+              </Providers>
             </QueryProvider>
           </SessionProvider>
         </ThemeProvider>

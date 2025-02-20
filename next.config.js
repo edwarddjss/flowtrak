@@ -12,13 +12,12 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   output: 'standalone',
-  compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
   swcMinify: true,
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'flowtrak-oa1fb0puw-edwards-projects-0c1a274c.vercel.app'],
+      allowedOrigins: ['localhost:3000', 'flowtrak.vercel.app'],
     },
   },
   images: {
@@ -26,24 +25,50 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**'
-      }
-    ]
+        hostname: '**.supabase.co',
+      },
+    ],
   },
   logging: {
     fetches: {
       fullUrl: true,
     },
   },
-  webpack: (config) => {
+  webpack: (config, { dev, isServer }) => {
     // Enable source maps
     if (!config.optimization) {
       config.optimization = {}
     }
     config.optimization.minimize = true
-    
+
+    // Optimize client-side bundles
+    if (!isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          minSize: 20000,
+          maxSize: 244000,
+          minChunks: 1,
+          maxAsyncRequests: 30,
+          maxInitialRequests: 30,
+          cacheGroups: {
+            defaultVendors: {
+              test: /[\\/]node_modules[\\/]/,
+              priority: -10,
+              reuseExistingChunk: true,
+            },
+            default: {
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      }
+    }
     return config
-  }
+  },
 }
 
 module.exports = nextConfig
