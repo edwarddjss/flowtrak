@@ -1,51 +1,25 @@
-import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-})
-
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const formData = await request.formData()
-    const file = formData.get('file') as File
-    
+    const formData = await req.formData();
+    const file = formData.get('file') as File;
+
     if (!file) {
       return NextResponse.json(
-        { error: 'No file uploaded' },
+        { error: 'No file provided' },
         { status: 400 }
-      )
+      );
     }
 
-    // Read file content
-    const fileContent = await file.text()
-
-    // Extract text from PDF/DOCX using OpenAI
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are a resume parser. Extract and structure the text content from the resume while preserving formatting and important details."
-        },
-        {
-          role: "user",
-          content: fileContent
-        }
-      ],
-      temperature: 0.2
-    })
-
-    const parsedContent = completion.choices[0]?.message?.content
-
-    return NextResponse.json({ content: parsedContent })
+    // Here you can implement file storage logic
+    // For now, just return success
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error uploading file:', error)
+    console.error('Upload error:', error);
     return NextResponse.json(
-      { error: 'Error processing file' },
+      { error: 'Failed to upload file' },
       { status: 500 }
-    )
+    );
   }
 }

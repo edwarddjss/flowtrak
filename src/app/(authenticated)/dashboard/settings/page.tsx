@@ -1,17 +1,30 @@
 'use client'
 
-import { ProfileSettings } from '@/components/flowgpt/profile-settings'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function SettingsPage() {
   return (
-    <div>
-      <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-      <p className="text-muted-foreground mt-2">
-        Manage your account and preferences
-      </p>
-      <div className="mt-8">
-        <ProfileSettings />
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium">Settings</h3>
+        <p className="text-sm text-muted-foreground">
+          Manage your account settings and preferences.
+        </p>
+      </div>
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Appearance</CardTitle>
+            <CardDescription>
+              Customize how FlowTrak looks on your device.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ThemeToggle />
+          </CardContent>
+        </Card>
       </div>
     </div>
-  )
+  );
 }
