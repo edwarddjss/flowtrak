@@ -17,13 +17,18 @@ import { Badge } from './ui/badge'
 import { Skeleton } from './ui/skeleton'
 
 interface ApplicationsTableProps {
-  applications: Application[]
-  onDelete: (id: string) => void
-  onUpdate: () => void
-  isLoading?: boolean
+  applications: Application[];
+  refreshAction: () => Promise<Application[]>;
+  deleteAction: (id: string) => Promise<Application[]>;
+  isLoading?: boolean;
 }
 
-export function ApplicationsTable({ applications, onDelete, onUpdate, isLoading }: ApplicationsTableProps) {
+export function ApplicationsTable({ 
+  applications, 
+  refreshAction, 
+  deleteAction, 
+  isLoading 
+}: ApplicationsTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const getStatusColor = (status: string) => {
@@ -134,7 +139,7 @@ export function ApplicationsTable({ applications, onDelete, onUpdate, isLoading 
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => onDelete(application.id)}
+                      onClick={() => deleteAction(application.id)}
                       className="cursor-pointer text-destructive"
                     >
                       <Trash className="mr-2 h-4 w-4" />
@@ -154,7 +159,7 @@ export function ApplicationsTable({ applications, onDelete, onUpdate, isLoading 
         onOpenChange={(open) => !open && setEditingId(null)}
         onSuccess={() => {
           setEditingId(null)
-          onUpdate()
+          refreshAction()
         }}
       />
     </>

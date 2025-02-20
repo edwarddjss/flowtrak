@@ -28,14 +28,26 @@ interface ApplicationDialogProps {
   trigger?: React.ReactNode
   initialData?: Partial<Application>
   mode?: 'create' | 'edit'
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  onSuccess?: () => Promise<Application[]>
 }
 
 export function ApplicationDialog({ 
   trigger, 
   initialData,
-  mode = 'create'
+  mode = 'create',
+  open,
+  onOpenChange,
+  onSuccess,
 }: ApplicationDialogProps) {
-  const [open, setOpen] = React.useState(false)
+  const [dialogOpen, setDialogOpen] = React.useState(open ?? false)
+
+  React.useEffect(() => {
+    if (open !== undefined) {
+      setDialogOpen(open)
+    }
+  }, [open])
 
   const processedInitialData: (Partial<FormValues> & { id?: string }) | undefined = initialData
     ? {
@@ -51,8 +63,16 @@ export function ApplicationDialog({
       }
     : undefined
 
+  const handleOpenChange = (open: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(open)
+    } else {
+      setDialogOpen(open)
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open ?? dialogOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger ?? (
           <Button>
@@ -74,7 +94,7 @@ export function ApplicationDialog({
         <ApplicationForm
           initialData={processedInitialData}
           mode={mode}
-          onSuccess={() => setOpen(false)}
+          onSuccess={onSuccess}
         />
       </DialogContent>
     </Dialog>

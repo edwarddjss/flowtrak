@@ -9,8 +9,25 @@ interface SpeechRecognitionState {
   error: string | null
 }
 
+interface SpeechRecognition {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  onstart: () => void
+  onend: () => void
+  onresult: (event: any) => void
+  onerror: (event: any) => void
+  start: () => void
+  stop: () => void
+}
+
+interface Window {
+  SpeechRecognition: typeof SpeechRecognition;
+  webkitSpeechRecognition: typeof SpeechRecognition;
+}
+
 export function useSpeechRecognition() {
-  const [recognition, setRecognition] = useState<any>(null)
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null)
   const [state, setState] = useState<SpeechRecognitionState>({
     isListening: false,
     transcript: '',

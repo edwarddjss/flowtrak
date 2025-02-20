@@ -8,7 +8,6 @@ import { ApplicationDialog } from '@/components/application-dialog'
 import { PlusIcon } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Application } from '@/types'
-import { SearchCommand } from '@/components/search-command'
 import { Input } from '@/components/ui/input'
 
 export default function ApplicationsPage() {
@@ -16,7 +15,6 @@ export default function ApplicationsPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
   const supabase = createClientComponentClient()
-  const searchShortcut = process.platform === 'win32' ? 'Ctrl + K' : '⌘ K'
 
   useEffect(() => {
     const getUser = async () => {
@@ -60,24 +58,25 @@ export default function ApplicationsPage() {
   if (!userId) return null
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
+    <div className="container py-6 space-y-4">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Applications</h1>
         <Button onClick={() => setShowAddDialog(true)}>
           <PlusIcon className="mr-2 h-4 w-4" />
           Add Application
         </Button>
-        <SearchCommand />
       </div>
 
       <Card className="p-0 overflow-hidden">
         <ApplicationsTable 
-          applications={applications}
+          applications={applications} 
           refreshAction={refreshApplications}
           deleteAction={deleteApplication}
+          isLoading={!userId} 
         />
       </Card>
 
-      <ApplicationDialog
+      <ApplicationDialog 
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSuccess={refreshApplications}

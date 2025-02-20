@@ -21,10 +21,7 @@ import {
   Menu, 
   Settings, 
   LogOut,
-  LayoutDashboard,
-  Brain,
-  FileText,
-  MessageSquare
+  LayoutDashboard
 } from 'lucide-react'
 import { ThemeToggle } from '../theme-toggle'
 import { RecentActivity } from '../recent-activity'
@@ -46,24 +43,6 @@ const sidebarItems = [
     icon: LayoutDashboard,
     href: '/dashboard',
     description: 'Overview of your applications'
-  },
-  {
-    title: 'Resume Review',
-    icon: FileText,
-    href: '/dashboard/resume',
-    description: 'AI-powered resume analysis'
-  },
-  {
-    title: 'Mock Interview',
-    icon: MessageSquare,
-    href: '/dashboard/interview',
-    description: 'Practice with AI interviews'
-  },
-  {
-    title: 'Job Analysis',
-    icon: Brain,
-    href: '/dashboard/analysis',
-    description: 'Get insights on companies'
   }
 ]
 

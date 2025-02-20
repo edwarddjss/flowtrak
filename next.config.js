@@ -1,11 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    turbotrace: {
-      logLevel: 'error',
-      memoryLimit: 4096
-    }
-  },
   typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
