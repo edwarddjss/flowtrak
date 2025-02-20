@@ -4,10 +4,14 @@ import { Card } from '@/components/ui/card'
 import { InternshipSankey } from '@/components/InternshipSankey'
 import { useApplications } from '@/lib/hooks/use-applications'
 import { ApplicationsTable } from '@/components/applications-table'
-import { AddApplicationDialog } from '@/components/add-application-dialog'
+import { ApplicationDialog } from '@/components/application-dialog'
 import { deleteApplicationAction } from '@/app/client-actions'
 import { useMemo } from 'react'
 import { BarChart2, Briefcase, Calendar, Clock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
+import { Suspense } from 'react'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 
 export default function DashboardPage() {
   const { applications, isLoading, refreshApplications } = useApplications()
@@ -61,7 +65,15 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <AddApplicationDialog onSuccess={refreshApplications} />
+            <ApplicationDialog
+              mode="create"
+              trigger={
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Application
+                </Button>
+              }
+            />
           </div>
         </div>
       </div>
@@ -127,14 +139,16 @@ export default function DashboardPage() {
 
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Applications</h2>
-            <ApplicationsTable 
-              applications={applications}
-              onDelete={async (id) => {
-                await deleteApplicationAction(id)
-                refreshApplications()
-              }}
-              onUpdate={refreshApplications}
-            />
+            <Suspense fallback={<TableSkeleton />}>
+              <ApplicationsTable 
+                applications={applications}
+                onDelete={async (id) => {
+                  await deleteApplicationAction(id)
+                  refreshApplications()
+                }}
+                onUpdate={refreshApplications}
+              />
+            </Suspense>
           </Card>
         </div>
       </div>

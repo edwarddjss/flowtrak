@@ -1,47 +1,47 @@
 'use client'
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Application } from '@/lib/types'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu'
-import { MoreHorizontal, Pencil, Trash } from 'lucide-react'
-import { EditApplicationDialog } from './edit-application-dialog'
-import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
+import { ApplicationDialog } from './application-dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { formatDate } from '@/lib/utils'
 import { Badge } from './ui/badge'
+import { cn } from '@/lib/utils'
+import { useState } from 'react'
 import { Skeleton } from './ui/skeleton'
 
 interface ApplicationsTableProps {
   applications: Application[];
-  refreshAction: () => Promise<Application[]>;
-  deleteAction: (id: string) => Promise<Application[]>;
+  onDelete: (id: string) => Promise<void>;
+  onUpdate: () => Promise<void>;
   isLoading?: boolean;
 }
 
 export function ApplicationsTable({ 
   applications, 
-  refreshAction, 
-  deleteAction, 
+  onDelete, 
+  onUpdate, 
   isLoading 
 }: ApplicationsTableProps) {
-  const [editingId, setEditingId] = useState<string | null>(null)
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      applied: 'bg-blue-500',
-      interviewing: 'bg-yellow-500',
-      offer: 'bg-green-500',
-      rejected: 'bg-red-500',
-      accepted: 'bg-purple-500'
-    }
-    return colors[status as keyof typeof colors] || 'bg-gray-500'
-  }
-
   if (isLoading) {
     return (
       <Table>
@@ -49,10 +49,10 @@ export function ApplicationsTable({
           <TableRow>
             <TableHead>Company</TableHead>
             <TableHead>Position</TableHead>
-            <TableHead>Location</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Applied Date</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>Last Updated</TableHead>
+            <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -60,8 +60,8 @@ export function ApplicationsTable({
             <TableRow key={i}>
               <TableCell><Skeleton className="h-4 w-32" /></TableCell>
               <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-24" /></TableCell>
               <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-24" /></TableCell>
               <TableCell><Skeleton className="h-4 w-24" /></TableCell>
               <TableCell><Skeleton className="h-8 w-8 rounded" /></TableCell>
             </TableRow>
@@ -78,10 +78,10 @@ export function ApplicationsTable({
           <TableRow>
             <TableHead>Company</TableHead>
             <TableHead>Position</TableHead>
-            <TableHead>Location</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Applied Date</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>Last Updated</TableHead>
+            <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -96,72 +96,78 @@ export function ApplicationsTable({
   }
 
   return (
-    <>
+    <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Company</TableHead>
             <TableHead>Position</TableHead>
-            <TableHead>Location</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Applied Date</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>Last Updated</TableHead>
+            <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {applications.map((application) => (
             <TableRow key={application.id}>
-              <TableCell>
-                <span className="font-medium">{application.company}</span>
-              </TableCell>
+              <TableCell className="font-medium">{application.company}</TableCell>
               <TableCell>{application.position}</TableCell>
-              <TableCell>{application.location}</TableCell>
               <TableCell>
-                <Badge variant="outline" className={getStatusColor(application.status)}>
+                <Badge
+                  className={cn(
+                    application.status === 'rejected' && 'bg-destructive',
+                    application.status === 'offer' && 'bg-green-600',
+                    application.status === 'interview' && 'bg-blue-600'
+                  )}
+                >
                   {application.status}
                 </Badge>
               </TableCell>
               <TableCell>{formatDate(application.applied_date)}</TableCell>
+              <TableCell>{formatDate(application.updated_at)}</TableCell>
               <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Open menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => setEditingId(application.id)}
-                      className="cursor-pointer"
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => deleteAction(application.id)}
-                      className="cursor-pointer text-destructive"
-                    >
-                      <Trash className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center gap-2">
+                  <ApplicationDialog
+                    mode="edit"
+                    initialData={application}
+                    onSuccess={onUpdate}
+                    trigger={
+                      <Button variant="ghost" size="icon">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    }
+                  />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Application</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this application? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => onDelete(application.id)}
+                          className="bg-destructive hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-
-      <EditApplicationDialog
-        application={applications.find(app => app.id === editingId)!}
-        open={!!editingId}
-        onOpenChange={(open) => !open && setEditingId(null)}
-        onSuccess={() => {
-          setEditingId(null)
-          refreshAction()
-        }}
-      />
-    </>
+    </div>
   )
 }
