@@ -10,52 +10,45 @@ import {
   DialogTrigger,
 } from './ui/dialog'
 import { ApplicationForm } from './application-form'
-import { Button } from './ui/button'
 import type { Application } from '@/types'
-
-interface FormValues {
-  company: string
-  position: string
-  location: string
-  status: 'applied' | 'interviewing' | 'offer' | 'accepted' | 'rejected'
-  applied_date: Date
-  salary?: string
-  notes?: string
-  link?: string
-}
 
 interface ApplicationDialogProps {
   trigger?: React.ReactNode
-  initialData?: Partial<Application>
+  initialData?: Application
   mode?: 'create' | 'edit'
   open?: boolean
   onOpenChange?: (open: boolean) => void
-  onSuccess?: () => Promise<Application[]>
+  onSuccess?: () => Promise<void>
 }
 
 export function ApplicationDialog({ 
-  trigger, 
+  trigger,
   initialData,
   mode = 'create',
-  open,
-  onOpenChange,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
   onSuccess,
 }: ApplicationDialogProps) {
-  const [dialogOpen, setDialogOpen] = React.useState(open ?? false)
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false)
 
-  React.useEffect(() => {
-    if (open !== undefined) {
-      setDialogOpen(open)
-    }
-  }, [open])
-
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : uncontrolledOpen
+  
   const handleOpenChange = (newOpen: boolean) => {
-    setDialogOpen(newOpen)
-    onOpenChange?.(newOpen)
+    if (isControlled) {
+      controlledOnOpenChange?.(newOpen)
+    } else {
+      setUncontrolledOpen(newOpen)
+    }
+  }
+
+  const handleSuccess = async () => {
+    handleOpenChange(false)
+    await onSuccess?.()
   }
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
@@ -69,12 +62,10 @@ export function ApplicationDialog({
           </DialogDescription>
         </DialogHeader>
         <ApplicationForm
+          key={initialData?.id || 'new'} // Force form re-render on id change
           initialData={initialData}
           mode={mode}
-          onSuccess={() => {
-            handleOpenChange(false)
-            onSuccess?.()
-          }}
+          onSuccess={handleSuccess}
         />
       </DialogContent>
     </Dialog>

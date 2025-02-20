@@ -16,60 +16,55 @@ export default function ApplicationPage({ params }: { params: { id: string } }) 
   const router = useRouter()
   const supabase = createClientComponentClient()
 
-  useEffect(() => {
-    const fetchApplication = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const { data, error: supabaseError } = await supabase
-          .from('applications')
-          .select('*')
-          .eq('id', params.id)
-          .single()
-
-        if (supabaseError) {
-          throw new Error(supabaseError.message)
-        }
-
-        if (!data) {
-          throw new Error('Application not found')
-        }
-
-        setApplication(data)
-      } catch (err) {
-        console.error('Error fetching application:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load application')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (params.id) {
-      fetchApplication()
-    }
-  }, [params.id, supabase])
-
-  const handleRefresh = async () => {
-    if (!application) return []
-    
+  const fetchApplication = async () => {
     try {
-      const { data, error } = await supabase
+      setLoading(true)
+      setError(null)
+
+      if (!params.id) {
+        throw new Error('Application ID is required')
+      }
+
+      const { data, error: supabaseError } = await supabase
         .from('applications')
         .select('*')
         .eq('id', params.id)
         .single()
 
-      if (error) throw error
-      if (data) {
-        setApplication(data)
-        return [data]
+      if (supabaseError) {
+        throw new Error(supabaseError.message)
       }
-      return []
+
+      if (!data) {
+        throw new Error('Application not found')
+      }
+
+      setApplication(data)
     } catch (err) {
-      console.error('Error refreshing application:', err)
-      return []
+      console.error('Error fetching application:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load application')
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
+    if (!params.id) {
+      setError('Application ID is required')
+      return
+    }
+    fetchApplication()
+  }, [params.id])
+
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      router.push('/dashboard/applications')
+    }
+    setDialogOpen(open)
+  }
+
+  const handleSuccess = async () => {
+    await fetchApplication()
   }
 
   if (loading) {
@@ -120,10 +115,10 @@ export default function ApplicationPage({ params }: { params: { id: string } }) 
       <Card className="p-0 overflow-hidden">
         <ApplicationDialog
           open={dialogOpen}
-          onOpenChange={setDialogOpen}
+          onOpenChange={handleDialogChange}
           mode="edit"
           initialData={application}
-          onSuccess={handleRefresh}
+          onSuccess={handleSuccess}
         />
       </Card>
     </div>
