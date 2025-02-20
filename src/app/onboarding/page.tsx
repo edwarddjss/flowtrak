@@ -1,46 +1,21 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function OnboardingPage() {
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClientComponentClient()
 
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (!session) {
-          router.replace('/auth/signin')
-          return
-        }
-
-        // Check if user is already onboarded
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_onboarded')
-          .eq('id', session.user.id)
-          .single()
-
-        if (profile?.is_onboarded) {
-          router.replace('/dashboard')
-        }
-      } catch (error) {
-        console.error('Error checking session:', error)
-      }
-    }
-
-    checkSession()
-  }, [router, supabase])
-
   const handleCompleteOnboarding = async () => {
     try {
+      setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session) {
@@ -48,25 +23,34 @@ export default function OnboardingPage() {
         return
       }
 
-      // Update user profile
+      // Update user metadata to remove isNewUser flag
+      await supabase.auth.updateUser({
+        data: { isNewUser: false }
+      })
+
+      // Update profile in profiles table
       await supabase
         .from('profiles')
         .update({ is_onboarded: true })
         .eq('id', session.user.id)
 
+      toast.success('Welcome to FlowTrak!')
       router.replace('/dashboard')
     } catch (error) {
       console.error('Error completing onboarding:', error)
+      toast.error('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <div className="container flex items-center justify-center min-h-screen py-12">
-      <Card className="w-full max-w-md">
+    <div className="container max-w-lg py-12">
+      <Card>
         <CardHeader>
           <CardTitle>Welcome to FlowTrak!</CardTitle>
           <CardDescription>
-            Let&apos;s get you started with tracking your job applications
+            Let's get you started with tracking your job applications.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -74,16 +58,18 @@ export default function OnboardingPage() {
             FlowTrak helps you organize and track your job applications in one place.
             You can:
           </p>
-          <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-            <li>Track application status and important dates</li>
+          <ul className="list-disc pl-4 space-y-2 text-sm text-muted-foreground">
+            <li>Track application statuses</li>
             <li>Set reminders for follow-ups</li>
-            <li>Monitor your application pipeline</li>
-            <li>Analyze your job search progress</li>
+            <li>Store important documents</li>
+            <li>Analyze your application progress</li>
           </ul>
           <Button 
+            className="w-full" 
             onClick={handleCompleteOnboarding}
-            className="w-full"
+            disabled={loading}
           >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Get Started
           </Button>
         </CardContent>

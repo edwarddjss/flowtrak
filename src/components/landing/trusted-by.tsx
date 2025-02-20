@@ -23,16 +23,20 @@ const companies = [
 export function TrustedBy() {
   const [visibleCompanies, setVisibleCompanies] = useState(companies.slice(0, 3))
   const [isAnimating, setIsAnimating] = useState(false)
+  const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const interval = setInterval(() => {
       setIsAnimating(true)
       setTimeout(() => {
         setVisibleCompanies(current => {
-          const nextIndex = companies.findIndex(c => c.name === current[0].name) + 1
-          const startIndex = nextIndex >= companies.length ? 0 : nextIndex
-          return companies.slice(startIndex, startIndex + 3).concat(
-            startIndex + 3 > companies.length ? companies.slice(0, 3 - (companies.length - startIndex)) : []
+          const availableCompanies = companies.filter(c => !failedLogos.has(c.logo))
+          if (availableCompanies.length < 3) return current // Keep current if not enough valid logos
+
+          const nextIndex = availableCompanies.findIndex(c => c.name === current[0].name) + 1
+          const startIndex = nextIndex >= availableCompanies.length ? 0 : nextIndex
+          return availableCompanies.slice(startIndex, startIndex + 3).concat(
+            startIndex + 3 > availableCompanies.length ? availableCompanies.slice(0, 3 - (availableCompanies.length - startIndex)) : []
           )
         })
         setIsAnimating(false)
@@ -40,29 +44,39 @@ export function TrustedBy() {
     }, 4000)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [failedLogos])
+
+  const handleImageError = (logo: string) => {
+    setFailedLogos(prev => new Set([...prev, logo]))
+  }
 
   return (
-    <div className="flex items-center justify-center gap-12">
-      <AnimatePresence mode="wait">
-        {visibleCompanies.map((company, index) => (
-          <motion.div
-            key={company.name}
-            className="relative h-12 w-12"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isAnimating ? 0 : 1, y: isAnimating ? 20 : 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <Image
-              src={company.logo}
-              alt={company.name}
-              fill
-              className="object-contain hover:scale-105 transition-transform rounded-full bg-white/5 p-2"
-            />
-          </motion.div>
-        ))}
-      </AnimatePresence>
+    <div className="mt-12 flex flex-col items-center justify-center gap-4">
+      <p className="text-center text-sm text-muted-foreground">
+        Trusted by job seekers applying to top companies worldwide
+      </p>
+      <div className="flex items-center justify-center gap-12">
+        <AnimatePresence mode="wait">
+          {visibleCompanies.map((company) => (
+            <motion.div
+              key={company.name}
+              className="relative h-12 w-24"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: isAnimating ? 0 : 1, y: isAnimating ? 20 : 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Image
+                src={company.logo}
+                alt={company.name}
+                className="object-contain dark:invert"
+                fill
+                onError={() => handleImageError(company.logo)}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </div>
   )
 }

@@ -27,8 +27,11 @@ export async function GET(request: Request) {
     if (user && !user.user_metadata.avatar_id) {
       return NextResponse.redirect(new URL('/account-setup', request.url))
     }
+
+    // Redirect to dashboard by default
+    return NextResponse.redirect(new URL(next, request.url))
   }
 
-  // Redirect to the dashboard by default
-  return NextResponse.redirect(new URL(next, requestUrl.origin))
+  // If no code, redirect to home
+  return NextResponse.redirect(new URL('/', request.url))
 }
