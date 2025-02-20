@@ -1,32 +1,63 @@
-'use server'
+'use client'
 
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { createClient } from '@/lib/supabase/server'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Loader2 } from 'lucide-react'
 
-async function completeOnboarding() {
-  'use server'
-  
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
-  
-  await supabase.auth.updateUser({
-    data: { isNewUser: false }
-  })
-  
-  redirect('/dashboard')
-}
+export default function OnboardingPage() {
+  const router = useRouter()
+  const supabase = createClientComponentClient()
 
-export default async function OnboardingPage() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
-  
-  const { data: { session } } = await supabase.auth.getSession()
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session) {
+          router.replace('/auth/signin')
+          return
+        }
 
-  if (!session) {
-    redirect('/auth/signin')
+        // Check if user is already onboarded
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_onboarded')
+          .eq('id', session.user.id)
+          .single()
+
+        if (profile?.is_onboarded) {
+          router.replace('/dashboard')
+        }
+      } catch (error) {
+        console.error('Error checking session:', error)
+      }
+    }
+
+    checkSession()
+  }, [router, supabase])
+
+  const handleCompleteOnboarding = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        router.replace('/auth/signin')
+        return
+      }
+
+      // Update user profile
+      await supabase
+        .from('profiles')
+        .update({ is_onboarded: true })
+        .eq('id', session.user.id)
+
+      router.replace('/dashboard')
+    } catch (error) {
+      console.error('Error completing onboarding:', error)
+    }
   }
 
   return (
@@ -49,11 +80,12 @@ export default async function OnboardingPage() {
             <li>Monitor your application pipeline</li>
             <li>Analyze your job search progress</li>
           </ul>
-          <form action={completeOnboarding}>
-            <Button type="submit" className="w-full mt-4">
-              Get Started
-            </Button>
-          </form>
+          <Button 
+            onClick={handleCompleteOnboarding}
+            className="w-full"
+          >
+            Get Started
+          </Button>
         </CardContent>
       </Card>
     </div>

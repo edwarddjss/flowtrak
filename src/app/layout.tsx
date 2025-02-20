@@ -7,6 +7,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next'
 import { SessionProvider } from '../components/providers'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Providers } from '@/components/providers'
+import { ErrorBoundary } from '@/components/error-boundary'
 import './globals.css'
 import '../styles/animations.css'
 
@@ -62,12 +63,14 @@ export default function RootLayout({
         >
           <SessionProvider>
             <QueryProvider>
-              <Providers>
-                {children}
-                <Toaster />
-                <Analytics />
-                <SpeedInsights />
-              </Providers>
+              <ErrorBoundary>
+                <Providers>
+                  {children}
+                  <Toaster />
+                  <Analytics />
+                  <SpeedInsights />
+                </Providers>
+              </ErrorBoundary>
             </QueryProvider>
           </SessionProvider>
         </ThemeProvider>
