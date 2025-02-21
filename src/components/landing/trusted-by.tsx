@@ -5,49 +5,102 @@ import Image from 'next/image'
 import { useEffect, useState } from 'react'
 
 const companies = [
-  'google.com',
-  'microsoft.com',
-  'meta.com',
-  'amazon.com',
-  'apple.com',
-  'netflix.com',
-  'uber.com',
-  'airbnb.com',
-  'spotify.com',
-  'stripe.com',
-].map(domain => ({
-  name: domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1),
-  logo: `https://logo.clearbit.com/${domain}`
-}))
+  {
+    name: 'Google',
+    logo: '/logos/google.svg'
+  },
+  {
+    name: 'Microsoft',
+    logo: '/logos/microsoft.svg'
+  },
+  {
+    name: 'Meta',
+    logo: '/logos/meta.svg'
+  },
+  {
+    name: 'Amazon',
+    logo: '/logos/amazon.svg'
+  },
+  {
+    name: 'Apple',
+    logo: '/logos/apple.svg'
+  },
+  {
+    name: 'Netflix',
+    logo: '/logos/netflix.svg'
+  },
+  {
+    name: 'Uber',
+    logo: '/logos/uber.svg'
+  },
+  {
+    name: 'Airbnb',
+    logo: '/logos/airbnb.svg'
+  },
+  {
+    name: 'Spotify',
+    logo: '/logos/spotify.svg'
+  },
+  {
+    name: 'Stripe',
+    logo: '/logos/stripe.svg'
+  }
+]
 
 export function TrustedBy() {
   const [visibleCompanies, setVisibleCompanies] = useState(companies.slice(0, 3))
   const [isAnimating, setIsAnimating] = useState(false)
-  const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set())
+  const [imagesLoaded, setImagesLoaded] = useState(false)
 
   useEffect(() => {
+    // Preload all images before starting animation
+    const imagePromises = companies.map(company => {
+      return new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = resolve
+        img.onerror = reject
+        img.src = company.logo
+      })
+    })
+
+    Promise.all(imagePromises)
+      .then(() => setImagesLoaded(true))
+      .catch(console.error)
+  }, [])
+
+  useEffect(() => {
+    if (!imagesLoaded) return
+
     const interval = setInterval(() => {
       setIsAnimating(true)
       setTimeout(() => {
         setVisibleCompanies(current => {
-          const availableCompanies = companies.filter(c => !failedLogos.has(c.logo))
-          if (availableCompanies.length < 3) return current // Keep current if not enough valid logos
-
-          const nextIndex = availableCompanies.findIndex(c => c.name === current[0].name) + 1
-          const startIndex = nextIndex >= availableCompanies.length ? 0 : nextIndex
-          return availableCompanies.slice(startIndex, startIndex + 3).concat(
-            startIndex + 3 > availableCompanies.length ? availableCompanies.slice(0, 3 - (availableCompanies.length - startIndex)) : []
+          const nextIndex = companies.findIndex(c => c.name === current[0].name) + 1
+          const startIndex = nextIndex >= companies.length ? 0 : nextIndex
+          return companies.slice(startIndex, startIndex + 3).concat(
+            startIndex + 3 > companies.length ? companies.slice(0, 3 - (companies.length - startIndex)) : []
           )
         })
         setIsAnimating(false)
-      }, 600)
+      }, 400)
     }, 4000)
 
     return () => clearInterval(interval)
-  }, [failedLogos])
+  }, [imagesLoaded])
 
-  const handleImageError = (logo: string) => {
-    setFailedLogos(prev => new Set([...prev, logo]))
+  if (!imagesLoaded) {
+    return (
+      <div className="mt-12 flex flex-col items-center justify-center gap-4">
+        <p className="text-center text-sm text-muted-foreground">
+          Trusted by job seekers applying to top companies worldwide
+        </p>
+        <div className="flex items-center justify-center gap-12">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="relative h-8 w-24 animate-pulse bg-muted rounded" />
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -60,18 +113,18 @@ export function TrustedBy() {
           {visibleCompanies.map((company) => (
             <motion.div
               key={company.name}
-              className="relative h-12 w-24"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: isAnimating ? 0 : 1, y: isAnimating ? 20 : 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.4, ease: 'easeInOut' }}
+              className="relative h-8 w-24"
             >
               <Image
                 src={company.logo}
-                alt={company.name}
-                className="object-contain dark:invert"
+                alt={`${company.name} logo`}
                 fill
-                onError={() => handleImageError(company.logo)}
+                className="object-contain filter dark:invert"
+                priority
               />
             </motion.div>
           ))}

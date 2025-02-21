@@ -1,35 +1,57 @@
 import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
-  const next = requestUrl.searchParams.get('next') || '/dashboard'
-  const isSignUp = requestUrl.searchParams.get('signup') === 'true'
 
   if (code) {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.exchangeCodeForSession(code)
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
 
-    // Only set isNewUser flag for new signups
-    if (isSignUp && user) {
-      await supabase.auth.updateUser({
-        data: { isNewUser: true }
-      })
-      return NextResponse.redirect(new URL('/onboarding', request.url))
+    // Exchange the code for a session
+    const { data: { user }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (sessionError) {
+      return NextResponse.redirect(new URL('/auth/signin?error=auth', request.url))
     }
 
-    // Check if user has completed avatar setup
-    if (user && !user.user_metadata.avatar_id) {
-      return NextResponse.redirect(new URL('/account-setup', request.url))
+    // Check if user exists in profiles table
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_verified, is_admin')
+      .eq('id', user!.id)
+      .single()
+
+    // If no profile exists, create one
+    if (!profile && !profileError) {
+      await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: user!.id,
+            email: user!.email,
+            is_verified: false,
+            is_admin: false
+          }
+        ])
+      
+      // Redirect to waitlist
+      return NextResponse.redirect(new URL('/waitlist', request.url))
     }
 
-    // Redirect to dashboard by default
-    return NextResponse.redirect(new URL(next, request.url))
+    // If user is verified, redirect to dashboard
+    if (profile?.is_verified) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    // Otherwise, redirect to waitlist
+    return NextResponse.redirect(new URL('/waitlist', request.url))
   }
 
-  // If no code, redirect to home
-  return NextResponse.redirect(new URL('/', request.url))
+  // If no code, redirect to signin
+  return NextResponse.redirect(new URL('/auth/signin', request.url))
 }

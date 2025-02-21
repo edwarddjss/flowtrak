@@ -146,9 +146,6 @@ export function LandingPage() {
 
           {/* Trusted Companies */}
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-4">
-              Trusted by job seekers from top companies
-            </p>
             <div className="w-full max-w-2xl mx-auto">
               <TrustedBy />
             </div>
