@@ -59,24 +59,30 @@ export async function middleware(request: NextRequest) {
 
   // If user is authenticated, check their status
   if (session) {
+    console.log('Session user:', session.user.id)
     const { data: profile } = await supabase
       .from('profiles')
       .select('is_verified, is_admin')
       .eq('id', session.user.id)
       .single()
 
+    console.log('User profile:', profile)
+
     // If trying to access admin routes, check admin status
     if (isAdminRoute && !profile?.is_admin) {
+      console.log('Non-admin trying to access admin route')
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
     // If verified user trying to access waitlist
     if (profile?.is_verified && pathname === '/waitlist') {
+      console.log('Verified user redirected from waitlist to dashboard')
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
     // If unverified user trying to access protected routes
     if (!profile?.is_verified && pathname !== '/waitlist' && !isPublicRoute) {
+      console.log('Unverified user redirected to waitlist')
       return NextResponse.redirect(new URL('/waitlist', request.url))
     }
   }

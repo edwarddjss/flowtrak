@@ -1,6 +1,6 @@
-import { createClient } from '@/utils/supabase/server'
-import { NextResponse } from 'next/server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,83 +8,43 @@ export async function GET(request: Request) {
   try {
     const requestUrl = new URL(request.url)
     const code = requestUrl.searchParams.get('code')
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://flowtrak.app'
-      : requestUrl.origin
+    const origin = requestUrl.origin
 
-    if (!code) {
-      return NextResponse.redirect(`${baseUrl}/auth/signin`)
-    }
-
-    const supabase = createClient()
-
-    const { data: { user }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
-    
-    if (sessionError) {
-      console.error('Session Error:', sessionError)
-      return NextResponse.redirect(`${baseUrl}/auth/signin?error=auth`)
-    }
-
-    // Check if user exists in profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('is_verified, is_admin')
-      .eq('id', user!.id)
-      .single()
-
-    // If no profile exists, create one
-    if (!profile && !profileError) {
-      await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: user!.id,
-            email: user!.email,
-            is_verified: false,
-            is_admin: false
-          }
-        ])
+    if (code) {
+      const supabase = createRouteHandlerClient({ cookies })
+      const { error } = await supabase.auth.exchangeCodeForSession(code)
       
-      const response = NextResponse.redirect(`${baseUrl}/waitlist`)
-      response.cookies.set('sb-auth-token', '', { 
-        maxAge: 0,
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        domain: process.env.NODE_ENV === 'production' ? '.flowtrak.app' : undefined
-      })
-      return response
+      if (error) {
+        console.error('Auth error:', error)
+        return NextResponse.redirect(`${origin}/auth/signin?error=auth`)
+      }
+
+      // Get user session and check verification status
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_verified, is_admin')
+          .eq('id', session.user.id)
+          .single()
+
+        // If user is verified or admin, redirect to dashboard
+        if (profile?.is_verified || profile?.is_admin) {
+          return NextResponse.redirect(`${origin}/dashboard`)
+        }
+
+        // If user is not verified, redirect to waitlist
+        return NextResponse.redirect(`${origin}/waitlist`)
+      }
     }
 
-    // If user is verified, redirect to dashboard
-    if (profile?.is_verified) {
-      const response = NextResponse.redirect(`${baseUrl}/dashboard`)
-      response.cookies.set('sb-auth-token', '', {
-        maxAge: 0,
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        domain: process.env.NODE_ENV === 'production' ? '.flowtrak.app' : undefined
-      })
-      return response
-    }
-
-    // Otherwise, redirect to waitlist
-    const response = NextResponse.redirect(`${baseUrl}/waitlist`)
-    response.cookies.set('sb-auth-token', '', {
-      maxAge: 0,
-      path: '/',
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      domain: process.env.NODE_ENV === 'production' ? '.flowtrak.app' : undefined
-    })
-    return response
+    // Fallback to sign in page
+    return NextResponse.redirect(`${origin}/auth/signin`)
 
   } catch (error) {
     console.error('Callback Error:', error)
-    const baseUrl = process.env.NODE_ENV === 'production'
-      ? 'https://flowtrak.app'
-      : new URL(request.url).origin
-    return NextResponse.redirect(`${baseUrl}/auth/signin?error=unknown`)
+    const origin = new URL(request.url).origin
+    return NextResponse.redirect(`${origin}/auth/signin?error=unknown`)
   }
 }
