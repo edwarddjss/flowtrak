@@ -8,9 +8,12 @@ export async function GET(request: Request) {
   try {
     const requestUrl = new URL(request.url)
     const code = requestUrl.searchParams.get('code')
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://flowtrak.app'
+      : requestUrl.origin
 
     if (!code) {
-      return NextResponse.redirect('https://flowtrak.app/auth/signin')
+      return NextResponse.redirect(`${baseUrl}/auth/signin`)
     }
 
     const supabase = createClient()
@@ -19,7 +22,7 @@ export async function GET(request: Request) {
     
     if (sessionError) {
       console.error('Session Error:', sessionError)
-      return NextResponse.redirect('https://flowtrak.app/auth/signin?error=auth')
+      return NextResponse.redirect(`${baseUrl}/auth/signin?error=auth`)
     }
 
     // Check if user exists in profiles table
@@ -42,7 +45,7 @@ export async function GET(request: Request) {
           }
         ])
       
-      const response = NextResponse.redirect('https://flowtrak.app/waitlist')
+      const response = NextResponse.redirect(`${baseUrl}/waitlist`)
       response.cookies.set('sb-auth-token', '', { 
         maxAge: 0,
         path: '/',
@@ -55,7 +58,7 @@ export async function GET(request: Request) {
 
     // If user is verified, redirect to dashboard
     if (profile?.is_verified) {
-      const response = NextResponse.redirect('https://flowtrak.app/dashboard')
+      const response = NextResponse.redirect(`${baseUrl}/dashboard`)
       response.cookies.set('sb-auth-token', '', {
         maxAge: 0,
         path: '/',
@@ -67,7 +70,7 @@ export async function GET(request: Request) {
     }
 
     // Otherwise, redirect to waitlist
-    const response = NextResponse.redirect('https://flowtrak.app/waitlist')
+    const response = NextResponse.redirect(`${baseUrl}/waitlist`)
     response.cookies.set('sb-auth-token', '', {
       maxAge: 0,
       path: '/',
@@ -79,6 +82,9 @@ export async function GET(request: Request) {
 
   } catch (error) {
     console.error('Callback Error:', error)
-    return NextResponse.redirect('https://flowtrak.app/auth/signin?error=unknown')
+    const baseUrl = process.env.NODE_ENV === 'production'
+      ? 'https://flowtrak.app'
+      : new URL(request.url).origin
+    return NextResponse.redirect(`${baseUrl}/auth/signin?error=unknown`)
   }
 }

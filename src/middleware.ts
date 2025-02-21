@@ -29,12 +29,12 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { session }, error } = await supabase.auth.getSession()
+  const { data: { session } } = await supabase.auth.getSession()
   const { pathname } = request.nextUrl
 
   // Public routes that don't require auth
-  const publicRoutes = ['/', '/auth/signin', '/auth/signup', '/auth/callback', '/waitlist']
-  const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith('/auth/'))
+  const publicRoutes = ['/', '/auth/signin', '/auth/signup', '/auth/callback']
+  const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/auth/')
 
   // Admin routes that require admin access
   const adminRoutes = ['/admin']
@@ -57,35 +57,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 
-  // If user is authenticated, check their verification status
+  // If user is authenticated, check their status
   if (session) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('is_verified')
+      .select('is_verified, is_admin')
       .eq('id', session.user.id)
       .single()
 
-    // If user is verified and trying to access public routes (except callback)
-    if (profile?.is_verified && isPublicRoute && pathname !== '/auth/callback') {
+    // If trying to access admin routes, check admin status
+    if (isAdminRoute && !profile?.is_admin) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
-    // If user is not verified and trying to access protected routes
-    if (!profile?.is_verified && !isPublicRoute && pathname !== '/waitlist') {
-      return NextResponse.redirect(new URL('/waitlist', request.url))
+    // If verified user trying to access waitlist
+    if (profile?.is_verified && pathname === '/waitlist') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
-  }
 
-  // Check admin access
-  if (isAdminRoute && session) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', session.user.id)
-      .single()
-
-    if (!profile?.is_admin) {
-      return NextResponse.redirect(new URL('/', request.url))
+    // If unverified user trying to access protected routes
+    if (!profile?.is_verified && pathname !== '/waitlist' && !isPublicRoute) {
+      return NextResponse.redirect(new URL('/waitlist', request.url))
     }
   }
 

@@ -46,7 +46,7 @@ export default function SignIn() {
             showLinks={true}
             providers={['google']}
             onlyThirdPartyProviders={true}
-            redirectTo={`https://flowtrak.app/auth/callback`}
+            redirectTo={`${origin}/auth/callback`}
             queryParams={{
               access_type: 'offline',
               prompt: 'consent'

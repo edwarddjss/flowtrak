@@ -8,26 +8,30 @@ import { useEffect, useState } from "react"
 
 export default function WaitlistPage() {
   const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
   const supabase = createClientComponentClient()
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
-      setLoading(false)
     }
     getUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [supabase])
 
-  if (loading) {
-    return null
-  }
-
   if (!user) {
-    router.replace('/auth/signin')
-    return null
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-pulse">Loading...</div>
+      </div>
+    )
   }
 
   return (
