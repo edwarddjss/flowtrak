@@ -7,70 +7,51 @@ import { useEffect, useState } from 'react'
 const companies = [
   {
     name: 'Google',
-    logo: '/logos/google.svg'
+    domain: 'google.com'
   },
   {
     name: 'Microsoft',
-    logo: '/logos/microsoft.svg'
+    domain: 'microsoft.com'
   },
   {
     name: 'Meta',
-    logo: '/logos/meta.svg'
+    domain: 'meta.com'
   },
   {
     name: 'Amazon',
-    logo: '/logos/amazon.svg'
+    domain: 'amazon.com'
   },
   {
     name: 'Apple',
-    logo: '/logos/apple.svg'
+    domain: 'apple.com'
   },
   {
     name: 'Netflix',
-    logo: '/logos/netflix.svg'
+    domain: 'netflix.com'
   },
   {
     name: 'Uber',
-    logo: '/logos/uber.svg'
+    domain: 'uber.com'
   },
   {
     name: 'Airbnb',
-    logo: '/logos/airbnb.svg'
+    domain: 'airbnb.com'
   },
   {
     name: 'Spotify',
-    logo: '/logos/spotify.svg'
+    domain: 'spotify.com'
   },
   {
     name: 'Stripe',
-    logo: '/logos/stripe.svg'
+    domain: 'stripe.com'
   }
 ]
 
 export function TrustedBy() {
   const [visibleCompanies, setVisibleCompanies] = useState(companies.slice(0, 3))
   const [isAnimating, setIsAnimating] = useState(false)
-  const [imagesLoaded, setImagesLoaded] = useState(false)
 
   useEffect(() => {
-    // Preload all images before starting animation
-    const imagePromises = companies.map(company => {
-      return new Promise((resolve, reject) => {
-        const img = new Image()
-        img.onload = resolve
-        img.onerror = reject
-        img.src = company.logo
-      })
-    })
-
-    Promise.all(imagePromises)
-      .then(() => setImagesLoaded(true))
-      .catch(console.error)
-  }, [])
-
-  useEffect(() => {
-    if (!imagesLoaded) return
-
     const interval = setInterval(() => {
       setIsAnimating(true)
       setTimeout(() => {
@@ -86,22 +67,7 @@ export function TrustedBy() {
     }, 4000)
 
     return () => clearInterval(interval)
-  }, [imagesLoaded])
-
-  if (!imagesLoaded) {
-    return (
-      <div className="mt-12 flex flex-col items-center justify-center gap-4">
-        <p className="text-center text-sm text-muted-foreground">
-          Trusted by job seekers applying to top companies worldwide
-        </p>
-        <div className="flex items-center justify-center gap-12">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="relative h-8 w-24 animate-pulse bg-muted rounded" />
-          ))}
-        </div>
-      </div>
-    )
-  }
+  }, [])
 
   return (
     <div className="mt-12 flex flex-col items-center justify-center gap-4">
@@ -120,11 +86,11 @@ export function TrustedBy() {
               className="relative h-8 w-24"
             >
               <Image
-                src={company.logo}
+                src={`https://logo.clearbit.com/${company.domain}`}
                 alt={`${company.name} logo`}
                 fill
-                className="object-contain filter dark:invert"
-                priority
+                className="object-contain"
+                unoptimized
               />
             </motion.div>
           ))}

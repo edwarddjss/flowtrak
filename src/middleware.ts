@@ -52,20 +52,26 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // Check if user is authenticated
+  // If user is not authenticated and trying to access protected route
   if (!session && !isPublicRoute) {
     return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 
-  // If user is authenticated but not verified and trying to access protected routes
-  if (session && !isPublicRoute) {
+  // If user is authenticated, check their verification status
+  if (session) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('is_verified')
       .eq('id', session.user.id)
       .single()
 
-    if (!profile?.is_verified && pathname !== '/waitlist') {
+    // If user is verified and trying to access public routes (except callback)
+    if (profile?.is_verified && isPublicRoute && pathname !== '/auth/callback') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    // If user is not verified and trying to access protected routes
+    if (!profile?.is_verified && !isPublicRoute && pathname !== '/waitlist') {
       return NextResponse.redirect(new URL('/waitlist', request.url))
     }
   }
@@ -88,12 +94,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
