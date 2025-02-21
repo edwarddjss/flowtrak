@@ -49,8 +49,7 @@ export default function SignIn() {
             redirectTo={`https://flowtrak.app/auth/callback`}
             queryParams={{
               access_type: 'offline',
-              prompt: 'consent',
-              hd: '*'
+              prompt: 'consent'
             }}
             cookieOptions={{
               name: "sb-auth-token",
