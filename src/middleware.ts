@@ -2,23 +2,32 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  console.log('\n=== Middleware Start ===')
-  console.log('Request URL:', request.url)
-  console.log('Pathname:', request.nextUrl.pathname)
+  const { pathname } = request.nextUrl
+
+  // First, check if it's a static or special route that should bypass auth
+  const staticRoutes = ['/_next', '/favicon.ico', '/logos', '/testimonials']
+  const isStaticRoute = staticRoutes.some(route => pathname.startsWith(route))
   
+  const apiRoutes = ['/api']
+  const isApiRoute = apiRoutes.some(route => pathname.startsWith(route))
+
+  if (isStaticRoute || isApiRoute) {
+    return NextResponse.next()
+  }
+
+  // Initialize response
   const response = NextResponse.next()
+  
+  // Create Supabase client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
-          const cookie = request.cookies.get(name)
-          console.log('Reading cookie:', name, cookie ? 'present' : 'missing')
-          return cookie?.value
+          return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          console.log('Setting cookie:', name)
           response.cookies.set({
             name,
             value,
@@ -26,7 +35,6 @@ export async function middleware(request: NextRequest) {
           })
         },
         remove(name: string, options: CookieOptions) {
-          console.log('Removing cookie:', name)
           response.cookies.set({
             name,
             value: '',
@@ -37,96 +45,70 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-  console.log('Session check result:', {
-    hasSession: !!session,
-    userId: session?.user?.id,
-    error: sessionError?.message
-  })
+  // Check if this is an auth-related route
+  const authRoutes = ['/auth/signin', '/auth/signup', '/auth/callback']
+  const isAuthRoute = authRoutes.includes(pathname) || pathname.startsWith('/auth/')
   
-  const { pathname } = request.nextUrl
-
-  // Public routes that don't require auth
-  const publicRoutes = ['/', '/auth/signin', '/auth/signup', '/auth/callback']
-  const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/auth/')
-  console.log('Route check:', {
-    pathname,
-    isPublicRoute,
-    matchedPublicRoute: publicRoutes.find(r => pathname.startsWith(r))
-  })
-
-  // Admin routes that require admin access
-  const adminRoutes = ['/admin']
-  const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route))
-  console.log('Admin route check:', { isAdminRoute })
-
-  // API routes that should be accessible
-  const apiRoutes = ['/api']
-  const isApiRoute = apiRoutes.some(route => pathname.startsWith(route))
-
-  // Static files that should be accessible
-  const staticRoutes = ['/_next', '/favicon.ico', '/logos', '/testimonials']
-  const isStaticRoute = staticRoutes.some(route => pathname.startsWith(route))
-  
-  console.log('Route type:', {
-    isApiRoute,
-    isStaticRoute,
-    matchedStaticRoute: staticRoutes.find(r => pathname.startsWith(r))
-  })
-
-  if (isStaticRoute || isApiRoute) {
-    console.log('Allowing static/api route')
+  // Always allow access to auth routes
+  if (isAuthRoute) {
     return response
   }
 
-  // If user is not authenticated and trying to access protected route
-  if (!session && !isPublicRoute) {
-    console.log('No session, redirecting to signin from:', pathname)
-    return NextResponse.redirect(new URL('/auth/signin', request.url))
-  }
+  // For all other routes, check authentication
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
 
-  // If user is authenticated, check their status
-  if (session) {
-    console.log('Checking profile for user:', session.user.id)
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('is_verified, is_admin')
-      .eq('id', session.user.id)
-      .single()
+    // Public routes that don't require auth
+    const publicRoutes = ['/', '/about', '/contact'] 
+    const isPublicRoute = publicRoutes.includes(pathname)
 
-    console.log('Profile check result:', {
-      hasProfile: !!profile,
-      isVerified: profile?.is_verified,
-      isAdmin: profile?.is_admin,
-      error: profileError?.message
-    })
+    // If we have a session and user is trying to access public route (like landing page)
+    if (session && isPublicRoute && pathname === '/') {
+      // Redirect authenticated users away from landing page to dashboard
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
 
-    if (profileError) {
-      console.error('Profile fetch error:', profileError)
+    // If no session and trying to access protected route
+    if (!session && !isPublicRoute) {
       return NextResponse.redirect(new URL('/auth/signin', request.url))
     }
 
-    // If trying to access admin routes, check admin status
-    if (isAdminRoute && !profile?.is_admin) {
-      console.log('Non-admin accessing admin route, redirecting to dashboard')
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+    // If we have a session, check user status
+    if (session) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_verified, is_admin')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profileError) {
+        console.error('Profile error:', profileError)
+        return NextResponse.redirect(new URL('/auth/signin', request.url))
+      }
+
+      // Admin routes check
+      const adminRoutes = ['/admin']
+      const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route))
+      
+      if (isAdminRoute && !profile?.is_admin) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+
+      // Waitlist handling
+      if (profile?.is_verified && pathname === '/waitlist') {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+
+      if (!profile?.is_verified && pathname !== '/waitlist' && !isPublicRoute) {
+        return NextResponse.redirect(new URL('/waitlist', request.url))
+      }
     }
 
-    // If verified user trying to access waitlist
-    if (profile?.is_verified && pathname === '/waitlist') {
-      console.log('Verified user accessing waitlist, redirecting to dashboard')
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-
-    // If unverified user trying to access protected routes
-    if (!profile?.is_verified && pathname !== '/waitlist' && !isPublicRoute) {
-      console.log('Unverified user accessing protected route, redirecting to waitlist')
-      return NextResponse.redirect(new URL('/waitlist', request.url))
-    }
+    return response
+  } catch (error) {
+    console.error('Middleware error:', error)
+    return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
-
-  console.log('=== Middleware End ===\n')
-  return response
 }
 
 export const config = {

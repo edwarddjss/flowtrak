@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
 export async function GET(request: Request) {
   try {
     const requestUrl = new URL(request.url)
@@ -33,21 +35,52 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}/auth/signin?error=session`)
       }
 
-      console.log('Auth Callback - Got session:', session ? 'yes' : 'no')
-      
-      if (session) {
-        console.log('Auth Callback - Checking profile for user:', session.user.id)
-        const { data: profile, error: profileError } = await supabase
+      if (!session) {
+        console.error('Auth Callback - No session after successful exchange')
+        return NextResponse.redirect(`${origin}/auth/signin?error=no_session`)
+      }
+
+      // Add a small delay to ensure the profile creation trigger has completed
+      await delay(1000)
+
+      // Attempt to get or create profile
+      const getProfile = async () => {
+        const { data, error } = await supabase
           .from('profiles')
           .select('is_verified, is_admin')
           .eq('id', session.user.id)
           .single()
-
-        if (profileError) {
-          console.error('Auth Callback - Profile error:', profileError)
-          return NextResponse.redirect(`${origin}/auth/signin?error=profile`)
+        
+        if (error) {
+          console.error('Auth Callback - Profile fetch error:', error)
+          // If profile doesn't exist, create it
+          if (error.code === 'PGRST116') {
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert([
+                { 
+                  id: session.user.id,
+                  email: session.user.email,
+                  is_verified: false,
+                  is_admin: false
+                }
+              ])
+              .select()
+              .single()
+            
+            if (createError) {
+              throw createError
+            }
+            return newProfile
+          }
+          throw error
         }
+        return data
+      }
 
+      try {
+        const profile = await getProfile()
+        
         console.log('Auth Callback - Profile data:', profile)
 
         // If user is verified or admin, redirect to dashboard
@@ -58,10 +91,13 @@ export async function GET(request: Request) {
 
         console.log('Auth Callback - User not verified, redirecting to waitlist')
         return NextResponse.redirect(`${origin}/waitlist`)
+      } catch (profileError) {
+        console.error('Auth Callback - Profile error:', profileError)
+        return NextResponse.redirect(`${origin}/auth/signin?error=profile`)
       }
     }
 
-    console.log('Auth Callback - No valid session, redirecting to signin')
+    console.log('Auth Callback - No code provided, redirecting to signin')
     return NextResponse.redirect(`${origin}/auth/signin`)
 
   } catch (error) {
