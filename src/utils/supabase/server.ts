@@ -13,11 +13,38 @@ export function createClient() {
           return cookieStore.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options })
+          try {
+            cookieStore.set({
+              name,
+              value,
+              ...options,
+              sameSite: 'lax',
+              secure: process.env.NODE_ENV === 'production',
+            })
+          } catch (error) {
+            // Handle cookie setting error
+            console.error('Error setting cookie:', error)
+          }
         },
         remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options })
+          try {
+            cookieStore.set({
+              name,
+              value: '',
+              ...options,
+              maxAge: 0,
+              sameSite: 'lax',
+              secure: process.env.NODE_ENV === 'production',
+            })
+          } catch (error) {
+            // Handle cookie removal error
+            console.error('Error removing cookie:', error)
+          }
         },
+      },
+      cookieOptions: {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
       },
     }
   )

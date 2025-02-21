@@ -46,10 +46,18 @@ export default function SignIn() {
             showLinks={true}
             providers={['google']}
             onlyThirdPartyProviders={true}
-            redirectTo="https://flowtrak.app/auth/callback"
+            redirectTo={`https://flowtrak.app/auth/callback`}
             queryParams={{
               access_type: 'offline',
               prompt: 'consent',
+              hd: '*'
+            }}
+            cookieOptions={{
+              name: "sb-auth-token",
+              lifetime: 60 * 60 * 24 * 7, // 1 week
+              domain: process.env.NODE_ENV === 'production' ? '.flowtrak.app' : undefined,
+              sameSite: "lax",
+              secure: process.env.NODE_ENV === 'production'
             }}
           />
         )}
