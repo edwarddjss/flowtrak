@@ -1,65 +1,45 @@
 'use client'
 
-import { Auth } from '@supabase/auth-ui-react'
-import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { createBrowserClient } from '@supabase/ssr'
-import { useEffect, useState } from 'react'
+import { Button } from "@/components/ui/button"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { useRouter } from "next/navigation"
 
 export default function SignIn() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-  const [origin, setOrigin] = useState<string>('')
+  const router = useRouter()
+  const supabase = createClientComponentClient()
 
-  useEffect(() => {
-    setOrigin(window.location.origin)
-  }, [])
+  const handleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    })
+
+    if (error) {
+      console.error('Sign in error:', error)
+    }
+  }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-2">
-      <div className="w-full max-w-md space-y-8 px-4 py-8">
-        <div className="text-center">
-          <h2 className="mt-6 text-3xl font-bold tracking-tight">
-            Welcome back to Flowtrak
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Sign in to manage your job applications
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="w-full max-w-sm space-y-4 text-center">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">Welcome to Flowtrak</h1>
+          <p className="text-gray-500 dark:text-gray-400">
+            Sign in to start tracking your job applications
           </p>
         </div>
-        {origin && (
-          <Auth
-            supabaseClient={supabase}
-            view="sign_in"
-            appearance={{ 
-              theme: ThemeSupa,
-              variables: {
-                default: {
-                  colors: {
-                    brand: '#2563eb',
-                    brandAccent: '#1d4ed8',
-                  }
-                }
-              }
-            }}
-            theme="dark"
-            showLinks={true}
-            providers={['google']}
-            onlyThirdPartyProviders={true}
-            redirectTo={`${origin}/auth/callback`}
-            queryParams={{
-              access_type: 'offline',
-              prompt: 'consent'
-            }}
-            cookieOptions={{
-              name: "sb-auth-token",
-              lifetime: 60 * 60 * 24 * 7, // 1 week
-              domain: process.env.NODE_ENV === 'production' ? '.flowtrak.app' : undefined,
-              sameSite: "lax",
-              secure: process.env.NODE_ENV === 'production'
-            }}
-          />
-        )}
+        <Button
+          className="w-full"
+          onClick={handleSignIn}
+        >
+          Continue with Google
+        </Button>
       </div>
     </div>
   )

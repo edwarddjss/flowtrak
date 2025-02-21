@@ -12,14 +12,9 @@ export async function GET(request: Request) {
 
     if (code) {
       const supabase = createRouteHandlerClient({ cookies })
-      const { error } = await supabase.auth.exchangeCodeForSession(code)
-      
-      if (error) {
-        console.error('Auth error:', error)
-        return NextResponse.redirect(`${origin}/auth/signin?error=auth`)
-      }
+      await supabase.auth.exchangeCodeForSession(code)
 
-      // Get user session and check verification status
+      // Get user session after exchange
       const { data: { session } } = await supabase.auth.getSession()
       
       if (session) {
@@ -44,7 +39,6 @@ export async function GET(request: Request) {
 
   } catch (error) {
     console.error('Callback Error:', error)
-    const origin = new URL(request.url).origin
-    return NextResponse.redirect(`${origin}/auth/signin?error=unknown`)
+    return NextResponse.redirect(`${new URL(request.url).origin}/auth/signin?error=unknown`)
   }
 }
