@@ -10,13 +10,13 @@ export async function GET(request: Request) {
 
   if (code) {
     const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = createClient()
 
     // Exchange the code for a session
     const { data: { user }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
     
     if (sessionError) {
-      return NextResponse.redirect(new URL('/auth/signin?error=auth', request.url))
+      return NextResponse.redirect('https://flowtrak.app/auth/signin?error=auth')
     }
 
     // Check if user exists in profiles table
@@ -40,18 +40,18 @@ export async function GET(request: Request) {
         ])
       
       // Redirect to waitlist
-      return NextResponse.redirect(new URL('/waitlist', request.url))
+      return NextResponse.redirect('https://flowtrak.app/waitlist')
     }
 
     // If user is verified, redirect to dashboard
     if (profile?.is_verified) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      return NextResponse.redirect('https://flowtrak.app/dashboard')
     }
 
     // Otherwise, redirect to waitlist
-    return NextResponse.redirect(new URL('/waitlist', request.url))
+    return NextResponse.redirect('https://flowtrak.app/waitlist')
   }
 
   // If no code, redirect to signin
-  return NextResponse.redirect(new URL('/auth/signin', request.url))
+  return NextResponse.redirect('https://flowtrak.app/auth/signin')
 }
