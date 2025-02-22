@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { GeistSans } from 'geist/font/sans'
-import { Toaster } from 'sonner'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -50,23 +49,22 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={geist.className}>
-      <body className="min-h-screen bg-background">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <Providers>
-            <ErrorBoundary>
+    <html lang="en" suppressHydrationWarning>
+      <body className={geist.className}>
+        <ErrorBoundary>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Providers>
               {children}
-              <Toaster />
-              <Analytics />
-              <SpeedInsights />
-            </ErrorBoundary>
-          </Providers>
-        </ThemeProvider>
+            </Providers>
+          </ThemeProvider>
+        </ErrorBoundary>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

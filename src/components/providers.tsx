@@ -3,7 +3,7 @@
 import { SessionProvider } from "next-auth/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "next-themes"
-import { Toaster } from "sonner"
+import { Toaster } from "@/components/ui/toaster"
 
 const queryClient = new QueryClient()
 
