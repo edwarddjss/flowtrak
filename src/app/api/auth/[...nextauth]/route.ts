@@ -13,7 +13,7 @@ const supabase = createClient(
   }
 )
 
-export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth({
+export const { auth, signIn, signOut } = NextAuth({
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -91,3 +91,7 @@ export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 })
+
+import { GET, POST } from "@/auth"
+
+export { GET, POST }
