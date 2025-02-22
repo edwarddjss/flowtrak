@@ -1,8 +1,5 @@
 'use client'
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 import { SessionProvider } from "next-auth/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "next-themes"
@@ -26,23 +23,4 @@ export function Providers({ children }: { children: React.ReactNode }) {
       </QueryClientProvider>
     </SessionProvider>
   )
-}
-
-export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const supabase = createClientComponentClient()
-  const router = useRouter()
-
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      router.refresh()
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [supabase, router])
-
-  return children
 }

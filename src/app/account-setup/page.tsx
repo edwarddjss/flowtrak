@@ -1,41 +1,38 @@
-'use server'
+'use client'
 
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { AvatarSelector } from '@/components/avatar-selector'
-import { createClient } from '@/lib/supabase/server'
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
+import { useUser } from "@/hooks/use-user"
+import { useEffect } from "react"
 
-export default async function AccountSetupPage() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
-  
-  const { data: { session } } = await supabase.auth.getSession()
+export default function AccountSetupPage() {
+  const router = useRouter()
+  const user = useUser()
 
-  if (!session) {
-    redirect('/auth/signin')
-  }
-
-  // Check if user already has an avatar
-  const { avatar_id } = session.user.user_metadata
-  if (avatar_id) {
-    redirect('/dashboard')
-  }
+  useEffect(() => {
+    if (!user) {
+      router.push("/auth/signin")
+    }
+  }, [user, router])
 
   return (
-    <div className="container flex items-center justify-center min-h-screen py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Complete Your Profile</CardTitle>
-          <CardDescription>
-            Choose an avatar to personalize your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AvatarSelector user={session.user} />
-        </CardContent>
-      </Card>
+    <div className="container max-w-lg py-10">
+      <div className="space-y-6">
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-bold">Welcome to FlowTrak</h1>
+          <p className="text-muted-foreground">
+            Let&apos;s set up your account
+          </p>
+        </div>
+        <div className="space-y-4">
+          <Button
+            className="w-full"
+            onClick={() => router.push("/dashboard")}
+          >
+            Continue to Dashboard
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

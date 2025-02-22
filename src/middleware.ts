@@ -1,20 +1,12 @@
-import { withAuth } from "next-auth/middleware"
-import { NextResponse } from "next/server"
+import { auth } from "./auth"
 
-export default withAuth(
-  function middleware(req) {
-    // If user is signed in and tries to access landing page
-    if (req.nextUrl.pathname === "/") {
-      return NextResponse.redirect(new URL("/dashboard", req.url))
-    }
-    return NextResponse.next()
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
+export default auth((req) => {
+  // If user is signed in and tries to access landing page
+  if (req.auth?.user && req.nextUrl.pathname === "/") {
+    return Response.redirect(new URL("/dashboard", req.nextUrl))
   }
-)
+  return null
+})
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico|auth).*)"],

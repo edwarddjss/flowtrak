@@ -1,73 +1,50 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { useQuery } from "@tanstack/react-query"
+import { createClient } from "@supabase/supabase-js"
+import { useUser } from "@/hooks/use-user"
 import { Application } from "@/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
 import { ApplicationDialog } from "@/components/application-dialog"
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
 export default function ApplicationPage({ params }: { params: { id: string } }) {
-  const [application, setApplication] = useState<Application | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(true)
+  const { user } = useUser()
   const router = useRouter()
-  const supabase = createClientComponentClient()
 
-  const fetchApplication = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      if (!params.id) {
-        throw new Error('Application ID is required')
-      }
-
-      const { data, error: supabaseError } = await supabase
+  const { data: application, isLoading, error } = useQuery({
+    queryKey: ['application', params.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('applications')
         .select('*')
         .eq('id', params.id)
+        .eq('user_id', user?.id)
         .single()
-
-      if (supabaseError) {
-        throw new Error(supabaseError.message)
-      }
-
-      if (!data) {
-        throw new Error('Application not found')
-      }
-
-      setApplication(data)
-    } catch (err) {
-      console.error('Error fetching application:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load application')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (!params.id) {
-      setError('Application ID is required')
-      return
-    }
-    fetchApplication()
-  }, [params.id])
+      
+      if (error) throw error
+      return data
+    },
+    enabled: !!user?.id
+  })
 
   const handleDialogChange = (open: boolean) => {
     if (!open) {
       router.push('/dashboard/applications')
     }
-    setDialogOpen(open)
   }
 
   const handleSuccess = async () => {
-    await fetchApplication()
+    // No need to fetch application again, useQuery will refetch automatically
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="container mx-auto py-6 max-w-7xl space-y-4">
         <Skeleton className="h-8 w-[200px]" />
@@ -93,7 +70,7 @@ export default function ApplicationPage({ params }: { params: { id: string } }) 
             <CardTitle>Error</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-destructive">{error}</p>
+            <p className="text-destructive">{error.message}</p>
             <button 
               onClick={() => router.push('/dashboard/applications')}
               className="text-sm text-muted-foreground hover:text-foreground"
@@ -107,14 +84,31 @@ export default function ApplicationPage({ params }: { params: { id: string } }) 
   }
 
   if (!application) {
-    return null
+    return (
+      <div className="container mx-auto py-6 max-w-7xl">
+        <Card className="p-6">
+          <CardHeader>
+            <CardTitle>Application not found</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-destructive">Application not found</p>
+            <button 
+              onClick={() => router.push('/dashboard/applications')}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Return to Applications
+            </button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
     <div className="container mx-auto py-6 max-w-7xl space-y-8">
       <Card className="p-0 overflow-hidden">
         <ApplicationDialog
-          open={dialogOpen}
+          open={true}
           onOpenChange={handleDialogChange}
           mode="edit"
           initialData={application}

@@ -1,30 +1,22 @@
-import { createClient } from '@/utils/supabase/server'
-import { redirect } from 'next/navigation'
-import { DashboardNav } from '@/components/dashboard/nav'
+import { SideNav } from "@/components/side-nav"
+import { useUser } from "@/hooks/use-user"
+import { redirect } from "next/navigation"
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = createClient()
+  const user = useUser()
 
-  // Always use getUser() for server-side auth checks
-  const { data: { user }, error } = await supabase.auth.getUser()
-
-  if (error || !user) {
+  if (!user) {
     redirect('/auth/signin')
   }
 
-  // Check if user is new and needs onboarding
-  if (user.user_metadata.isNewUser) {
-    redirect('/onboarding')
-  }
-
   return (
-    <div className="flex min-h-screen flex-col">
-      <DashboardNav user={user} />
-      <main className="flex-1 bg-muted/10">
+    <div className="flex h-screen overflow-hidden">
+      <SideNav />
+      <main className="flex-1 overflow-y-auto bg-muted/10">
         {children}
       </main>
     </div>
