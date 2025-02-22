@@ -1,73 +1,44 @@
 'use client'
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useUser } from "@/hooks/use-user"
+import { useEffect } from "react"
 
 export default function WaitlistPage() {
-  const [user, setUser] = useState<any>(null)
-  const supabase = createClientComponentClient()
+  const router = useRouter()
+  const user = useUser()
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
+    if (user) {
+      router.push("/dashboard")
     }
-    getUser()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [supabase])
-
-  if (!user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-pulse">Loading...</div>
-      </div>
-    )
-  }
+  }, [user, router])
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <CardTitle>Welcome to the Waitlist!</CardTitle>
-          <CardDescription>
-            Thank you for joining Flowtrak. We're currently in beta and are carefully onboarding users to ensure the best experience.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Your account is currently in the waitlist. We'll notify you via email ({user.email}) when you're granted access.
+    <div className="container max-w-lg py-10">
+      <div className="space-y-6">
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-bold">Join the Waitlist</h1>
+          <p className="text-muted-foreground">
+            Be the first to know when we launch
           </p>
-          <div className="space-y-2">
-            <h3 className="font-medium">While you wait:</h3>
-            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Follow us on Twitter for updates</li>
-              <li>Join our Discord community</li>
-              <li>Check out our blog for job search tips</li>
-            </ul>
-          </div>
-          <div className="flex gap-4">
-            <Button variant="outline" onClick={() => window.open('https://twitter.com/flowtrakapp', '_blank')}>
-              Twitter
-            </Button>
-            <Button variant="outline" onClick={() => window.open('https://discord.gg/flowtrak', '_blank')}>
-              Discord
-            </Button>
-            <Button variant="outline" onClick={() => window.open('https://blog.flowtrak.app', '_blank')}>
-              Blog
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="space-y-4">
+          <form className="space-y-4">
+            <input
+              type="email"
+              placeholder="Enter your email"
+              className="w-full px-4 py-2 border rounded"
+            />
+            <button
+              type="submit"
+              className="w-full px-4 py-2 bg-primary text-white rounded"
+            >
+              Join Waitlist
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   )
 }

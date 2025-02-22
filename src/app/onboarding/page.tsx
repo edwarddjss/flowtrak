@@ -1,79 +1,37 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { useRouter } from "next/navigation"
+import { useUser } from "@/hooks/use-user"
+import { useEffect } from "react"
 
 export default function OnboardingPage() {
-  const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  const user = useUser()
 
-  const handleCompleteOnboarding = async () => {
-    try {
-      setLoading(true)
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        router.replace('/auth/signin')
-        return
-      }
-
-      // Update user metadata to remove isNewUser flag
-      await supabase.auth.updateUser({
-        data: { isNewUser: false }
-      })
-
-      // Update profile in profiles table
-      await supabase
-        .from('profiles')
-        .update({ is_onboarded: true })
-        .eq('id', session.user.id)
-
-      toast.success('Welcome to FlowTrak!')
-      router.replace('/dashboard')
-    } catch (error) {
-      console.error('Error completing onboarding:', error)
-      toast.error('Something went wrong. Please try again.')
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    if (!user) {
+      router.push("/auth/signin")
     }
-  }
+  }, [user, router])
 
   return (
-    <div className="container max-w-lg py-12">
-      <Card>
-        <CardHeader>
-          <CardTitle>Welcome to FlowTrak!</CardTitle>
-          <CardDescription>
-            Let's get you started with tracking your job applications.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            FlowTrak helps you organize and track your job applications in one place.
-            You can:
+    <div className="container max-w-lg py-10">
+      <div className="space-y-6">
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-bold">Welcome to FlowTrak</h1>
+          <p className="text-muted-foreground">
+            Let&apos;s get you started
           </p>
-          <ul className="list-disc pl-4 space-y-2 text-sm text-muted-foreground">
-            <li>Track application statuses</li>
-            <li>Set reminders for follow-ups</li>
-            <li>Store important documents</li>
-            <li>Analyze your application progress</li>
-          </ul>
-          <Button 
-            className="w-full" 
-            onClick={handleCompleteOnboarding}
-            disabled={loading}
+        </div>
+        <div className="space-y-4">
+          <button
+            className="w-full"
+            onClick={() => router.push("/dashboard")}
           >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Get Started
-          </Button>
-        </CardContent>
-      </Card>
+            Continue to Dashboard
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
