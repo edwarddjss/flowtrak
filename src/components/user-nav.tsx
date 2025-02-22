@@ -1,66 +1,66 @@
 'use client'
 
-import { User } from '@supabase/supabase-js'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useRouter } from 'next/navigation'
+} from "@/components/ui/dropdown-menu"
+import { useUser } from "@/hooks/use-user"
+import { signOut } from "next-auth/react"
+import Link from "next/link"
 
-interface UserNavProps {
-  user: User
-}
+export function UserNav() {
+  const { user, profile } = useUser()
 
-export function UserNav({ user }: UserNavProps) {
-  const router = useRouter()
-  const supabase = createClientComponentClient()
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
-
-  const userInitials = user.email
-    ?.split('@')[0]
-    .split('.')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
+  if (!user) return null
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar>
-            <AvatarImage src={user.user_metadata?.avatar_url ?? ''} alt={user.user_metadata?.full_name ?? ''} />
-            <AvatarFallback>
-              {userInitials}
-            </AvatarFallback>
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={user.image || ''} alt={user.name || ''} />
+            <AvatarFallback>{user.name?.[0]}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.user_metadata?.full_name}</p>
+            <p className="text-sm font-medium leading-none">{user.name}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard">Dashboard</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/settings">Settings</Link>
+          </DropdownMenuItem>
+          {profile?.is_admin && (
+            <DropdownMenuItem asChild>
+              <Link href="/admin">Admin</Link>
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer"
-          onSelect={handleSignOut}
+          onClick={() => signOut({ callbackUrl: '/' })}
         >
-          Sign out
+          Log out
+          <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,6 +1,9 @@
 'use client'
 
 import { Button } from "@/components/ui/button"
+import { signIn } from "next-auth/react"
+import { useUser } from "@/hooks/use-user"
+import { redirect } from "next/navigation"
 import Link from "next/link"
 import { DashboardPreview } from "./dashboard-preview"
 import { ModeToggle } from "./mode-toggle"
@@ -10,30 +13,18 @@ import { Pricing } from "./landing/pricing"
 import { Testimonials } from "./landing/testimonials"
 import { TrustedBy } from "./landing/trusted-by"
 import { Footer } from "./landing/footer"
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useEffect, useState } from 'react'
-import { User } from '@supabase/supabase-js'
-import { cn } from '@/lib/utils'
-import { motion } from 'framer-motion'
 import { CustomAvatar } from './ui/custom-avatar'
 
 export function LandingPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const supabase = createClientComponentClient()
+  const { user, isLoading } = useUser()
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-    }
-    getUser()
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [supabase])
+  if (user) {
+    redirect('/dashboard')
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -67,23 +58,12 @@ export function LandingPage() {
           </div>
           <div className="flex items-center gap-4">
             <ModeToggle />
-            {user ? (
-              <div className="flex items-center gap-4">
-                <CustomAvatar userId={user.id} className="h-8 w-8" />
-                <Button asChild>
-                  <Link href="/dashboard">Dashboard</Link>
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Button variant="ghost" asChild>
-                  <Link href="/auth/signin">Log in</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/auth/signin?signup=true">Try for free</Link>
-                </Button>
-              </>
-            )}
+            <Button variant="ghost" asChild>
+              <Link href="/auth/signin">Log in</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/auth/signin?signup=true">Try for free</Link>
+            </Button>
           </div>
         </div>
       </header>

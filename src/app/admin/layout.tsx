@@ -1,50 +1,25 @@
 'use client'
 
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useUser } from "@/hooks/use-user"
+import { redirect } from "next/navigation"
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
-  const supabase = createClientComponentClient()
+  const { profile, isLoading } = useUser()
 
-  useEffect(() => {
-    const checkAdminAccess = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        router.replace('/auth/signin')
-        return
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', session.user.id)
-        .single()
-
-      if (!profile?.is_admin) {
-        router.replace('/dashboard')
-        return
-      }
-
-      setLoading(false)
-    }
-
-    checkAdminAccess()
-  }, [router, supabase])
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse">Loading...</div>
       </div>
     )
+  }
+
+  if (!profile?.is_admin) {
+    redirect('/dashboard')
   }
 
   return (

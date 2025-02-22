@@ -1,38 +1,15 @@
 'use client'
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useEffect, useState } from 'react'
-import type { User } from '@supabase/auth-helpers-nextjs'
+import { useSession } from "next-auth/react"
 
 export function useUser() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const supabase = createClientComponentClient()
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      setLoading(false)
-    }
-
-    getUser()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        setUser(session.user)
-      } else {
-        setUser(null)
-      }
-      setLoading(false)
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [supabase])
-
-  return { user, loading }
+  const { data: session, status } = useSession()
+  
+  return {
+    user: session?.user,
+    profile: session?.user?.profile,
+    isLoading: status === "loading",
+    isAdmin: session?.user?.profile?.is_admin || false,
+    isVerified: session?.user?.profile?.is_verified || false
+  }
 }

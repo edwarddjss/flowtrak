@@ -1,15 +1,12 @@
 import type { Metadata, Viewport } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { Toaster } from 'sonner'
-import { QueryProvider } from '../components/query-provider'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
-import { SessionProvider } from '../components/providers'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Providers } from '@/components/providers'
 import { ErrorBoundary } from '@/components/error-boundary'
 import './globals.css'
-import '../styles/animations.css'
 
 const geist = GeistSans
 
@@ -25,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://flowtrak.vercel.app',
+    url: 'https://flowtrak.app',
     title: 'FlowTrak - Track Your Job Applications',
     description: 'Track your job applications and career journey with FlowTrak',
     siteName: 'FlowTrak'
@@ -35,7 +32,7 @@ export const metadata: Metadata = {
     title: 'FlowTrak - Track Your Job Applications',
     description: 'Track your job applications and career journey with FlowTrak'
   },
-  metadataBase: new URL('https://flowtrak.vercel.app'),
+  metadataBase: new URL('https://flowtrak.app'),
 }
 
 export const viewport: Viewport = {
@@ -61,18 +58,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SessionProvider>
-            <QueryProvider>
-              <ErrorBoundary>
-                <Providers>
-                  {children}
-                  <Toaster />
-                  <Analytics />
-                  <SpeedInsights />
-                </Providers>
-              </ErrorBoundary>
-            </QueryProvider>
-          </SessionProvider>
+          <Providers>
+            <ErrorBoundary>
+              {children}
+              <Toaster />
+              <Analytics />
+              <SpeedInsights />
+            </ErrorBoundary>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>
