@@ -35,16 +35,20 @@ export default auth((req) => {
   }
 
   const isLoggedIn = !!req.auth
-  const isOnLandingPage = req.nextUrl.pathname === "/"
-  const isOnAuthPage = req.nextUrl.pathname.startsWith("/auth")
+  const isPublicRoute = 
+    req.nextUrl.pathname === "/" || 
+    req.nextUrl.pathname.startsWith("/auth") ||
+    req.nextUrl.pathname.startsWith("/about") ||
+    req.nextUrl.pathname.startsWith("/privacy") ||
+    req.nextUrl.pathname.startsWith("/terms")
 
-  // Redirect authenticated users away from auth pages
-  if (isLoggedIn && (isOnLandingPage || isOnAuthPage)) {
+  // If the user is logged in and trying to access auth pages, redirect to dashboard
+  if (isLoggedIn && req.nextUrl.pathname.startsWith("/auth")) {
     return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 
-  // Redirect unauthenticated users to sign in
-  if (!isLoggedIn && !isOnLandingPage && !isOnAuthPage) {
+  // If the user is not logged in and trying to access protected routes, redirect to sign in
+  if (!isLoggedIn && !isPublicRoute) {
     return NextResponse.redirect(new URL("/auth/signin", req.url))
   }
 
