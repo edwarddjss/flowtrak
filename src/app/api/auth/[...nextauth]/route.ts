@@ -52,21 +52,21 @@ const handler = NextAuth({
       return true
     },
     async session({ session, token }) {
-      if (session.user) {
-        // Add user's profile data to session
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("email", session.user.email)
-          .single()
-
+      if (session?.user) {
         session.user.id = token.sub!
-        session.user.profile = profile
       }
       return session
     },
+    async jwt({ token, user }) {
+      if (user) {
+        token.sub = user.id
+      }
+      return token
+    }
   },
   pages: {
     signIn: "/auth/signin",
   },
 })
+
+export { handler as GET, handler as POST }

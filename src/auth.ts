@@ -54,27 +54,30 @@ export const { auth, signIn, signOut } = NextAuth({
             return false
           }
         }
-
-        return true
       }
 
-      return false
+      return true
+    },
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === "update" && session?.user) {
+        token.user = session.user
+      }
+      if (user) {
+        token.sub = user.id
+      }
+      return token
     },
     async session({ session, token }) {
-      if (session.user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("email", session.user.email)
-          .single()
-
-        session.user.id = profile?.id || token.sub || session.user.id
-        session.user.profile = profile
+      if (session?.user) {
+        session.user.id = token.sub!
       }
       return session
     },
   },
   pages: {
     signIn: "/auth/signin",
+  },
+  session: {
+    strategy: "jwt",
   },
 })
