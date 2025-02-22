@@ -1,18 +1,20 @@
 import { auth } from "./auth"
 import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
 
 // Middleware to handle auth and redirects
 export default auth((req) => {
+  // Allow all auth API routes and static files
+  if (
+    req.nextUrl.pathname.startsWith('/api/auth') ||
+    req.nextUrl.pathname.startsWith('/_next') ||
+    req.nextUrl.pathname.includes('/favicon.ico')
+  ) {
+    return NextResponse.next()
+  }
+
   const isLoggedIn = !!req.auth
   const isOnLandingPage = req.nextUrl.pathname === "/"
   const isOnAuthPage = req.nextUrl.pathname.startsWith("/auth")
-  const isApiAuthRoute = req.nextUrl.pathname.startsWith("/api/auth")
-
-  // Allow all auth API routes
-  if (isApiAuthRoute) {
-    return NextResponse.next()
-  }
 
   // Redirect authenticated users away from auth pages
   if (isLoggedIn && (isOnLandingPage || isOnAuthPage)) {
@@ -24,7 +26,15 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/auth/signin", req.url))
   }
 
-  return NextResponse.next()
+  const response = NextResponse.next()
+
+  // Add CORS headers
+  response.headers.set('Access-Control-Allow-Origin', '*')
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  response.headers.set('Access-Control-Max-Age', '86400')
+
+  return response
 })
 
 // Specify which routes middleware will run on
