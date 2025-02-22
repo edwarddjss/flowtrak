@@ -95,3 +95,4 @@ export function ApplicationCard({ id, company, role, time, status, onClick }: Ap
     </button>
   )
 }
+

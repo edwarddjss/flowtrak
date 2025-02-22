@@ -64,3 +64,4 @@ export function CompanyAvatar({ company, className, size = 'md' }: CompanyAvatar
     </Avatar>
   )
 }
+

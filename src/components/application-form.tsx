@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { CalendarIcon } from 'lucide-react'
 import { format } from 'date-fns'
-import { cn } from '../lib/utils'
+import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import {
   Form,

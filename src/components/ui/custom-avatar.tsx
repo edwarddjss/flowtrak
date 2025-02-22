@@ -62,3 +62,4 @@ export function CustomAvatar({ userId, className, fallback = '?' }: CustomAvatar
     </Avatar>
   )
 }
+
