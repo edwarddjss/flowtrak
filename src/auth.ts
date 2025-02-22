@@ -58,18 +58,15 @@ export const { auth, signIn, signOut } = NextAuth({
 
       return true
     },
-    async jwt({ token, user, trigger, session }) {
-      if (trigger === "update" && session?.user) {
-        token.user = session.user
-      }
+    async jwt({ token, user }) {
       if (user) {
-        token.sub = user.id
+        token.id = user.id
       }
       return token
     },
     async session({ session, token }) {
-      if (session?.user) {
-        session.user.id = token.sub!
+      if (session.user) {
+        session.user.id = token.id as string
       }
       return session
     },
@@ -79,5 +76,6 @@ export const { auth, signIn, signOut } = NextAuth({
   },
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 })

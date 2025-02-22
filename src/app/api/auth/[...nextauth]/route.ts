@@ -13,7 +13,7 @@ const supabase = createClient(
   }
 )
 
-const handler = NextAuth({
+export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth({
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -38,11 +38,14 @@ const handler = NextAuth({
           }
 
           if (!profile) {
+            // Generate a UUID for the user if one doesn't exist
+            const userId = user.id || crypto.randomUUID()
+            
             const { error: insertError } = await supabase
               .from("profiles")
               .insert([
                 {
-                  id: user.id,
+                  id: userId,
                   email: user.email,
                   is_verified: true,
                   is_admin: false,
@@ -53,6 +56,12 @@ const handler = NextAuth({
               console.error("Error creating profile:", insertError)
               return false
             }
+
+            // Assign the generated ID back to the user
+            user.id = userId
+          } else {
+            // Use the existing profile ID
+            user.id = profile.id
           }
         }
         return true
@@ -62,26 +71,16 @@ const handler = NextAuth({
       }
     },
     async jwt({ token, user }) {
-      try {
-        if (user) {
-          token.sub = user.id
-        }
-        return token
-      } catch (error) {
-        console.error("Error in jwt callback:", error)
-        return token
+      if (user?.id) {
+        token.id = user.id
       }
+      return token
     },
     async session({ session, token }) {
-      try {
-        if (session?.user) {
-          session.user.id = token.sub!
-        }
-        return session
-      } catch (error) {
-        console.error("Error in session callback:", error)
-        return session
+      if (session.user && token.id) {
+        session.user.id = token.id
       }
+      return session
     },
   },
   pages: {
@@ -92,5 +91,3 @@ const handler = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 })
-
-export { handler as GET, handler as POST }
