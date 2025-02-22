@@ -1,6 +1,14 @@
-import NextAuth from "next-auth"
+import NextAuth, { type DefaultSession, type NextAuthConfig } from "next-auth"
 import Google from "next-auth/providers/google"
 import { createClient } from "@supabase/supabase-js"
+
+declare module "next-auth" {
+  interface Session extends DefaultSession {
+    user: {
+      id: string
+    } & DefaultSession["user"]
+  }
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,7 +21,7 @@ const supabase = createClient(
   }
 )
 
-export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth({
+export const authConfig: NextAuthConfig = {
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -59,7 +67,7 @@ export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth({
       }
     },
     async jwt({ token, user }) {
-      if (user) {
+      if (user?.id) {
         token.id = user.id
       }
       return token
@@ -74,4 +82,6 @@ export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth({
   pages: {
     signIn: "/auth/signin",
   },
-})
+}
+
+export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth(authConfig)
