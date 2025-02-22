@@ -1,15 +1,17 @@
 import { SideNav } from "@/components/side-nav"
-import { useUser } from "@/hooks/use-user"
+import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 
-export default function DashboardLayout({
+// Prevent static generation for dashboard pages
+export const dynamic = 'force-dynamic'
+
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const user = useUser()
-
-  if (!user) {
+  const session = await auth()
+  if (!session?.user) {
     redirect('/auth/signin')
   }
 

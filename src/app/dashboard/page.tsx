@@ -1,22 +1,40 @@
-'use client'
-
 import { Card } from '@/components/ui/card'
 import { InternshipSankey } from '@/components/InternshipSankey'
-import { useApplications } from '@/lib/hooks/use-applications'
 import { ApplicationsTable } from '@/components/applications-table'
 import { ApplicationDialog } from '@/components/application-dialog'
-import { deleteApplicationAction } from '@/app/client-actions'
-import { useMemo } from 'react'
 import { BarChart2, Briefcase, Calendar, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { Suspense } from 'react'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { auth } from "@/auth"
+import { createClient } from '@supabase/supabase-js'
 
-export default function DashboardPage() {
-  const { applications, isLoading, refreshApplications } = useApplications()
+// Prevent static generation
+export const dynamic = 'force-dynamic'
 
-  const stats = useMemo(() => {
+async function getApplications() {
+  const session = await auth()
+  if (!session?.user) return []
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data } = await supabase
+    .from('applications')
+    .select('*')
+    .eq('user_id', session.user.id)
+    .order('created_at', { ascending: false })
+
+  return data || []
+}
+
+export default async function DashboardPage() {
+  const applications = await getApplications()
+
+  const stats = (() => {
     if (!applications?.length) return null
 
     const totalApplications = applications.length
@@ -52,7 +70,7 @@ export default function DashboardPage() {
       responseRate,
       avgDays
     }
-  }, [applications])
+  })()
 
   return (
     <div className="h-full flex flex-col">
@@ -134,7 +152,7 @@ export default function DashboardPage() {
 
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Application Flow</h2>
-            <InternshipSankey applications={applications} isLoading={isLoading} />
+            <InternshipSankey applications={applications} />
           </Card>
 
           <Card className="p-6">
@@ -142,11 +160,6 @@ export default function DashboardPage() {
             <Suspense fallback={<TableSkeleton />}>
               <ApplicationsTable 
                 applications={applications}
-                onDelete={async (id) => {
-                  await deleteApplicationAction(id)
-                  refreshApplications()
-                }}
-                onUpdate={refreshApplications}
               />
             </Suspense>
           </Card>

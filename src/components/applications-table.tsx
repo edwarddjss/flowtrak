@@ -28,6 +28,8 @@ import { Badge } from './ui/badge'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { Skeleton } from './ui/skeleton'
+import { deleteApplicationAction } from '@/app/client-actions'
+import { useRouter } from 'next/navigation'
 
 interface ApplicationsTableProps {
   applications: Application[];
@@ -42,6 +44,18 @@ export function ApplicationsTable({
   onUpdate, 
   isLoading 
 }: ApplicationsTableProps) {
+  const router = useRouter()
+
+  const handleDelete = async (id: string) => {
+    await onDelete(id)
+    router.refresh()
+  }
+
+  const handleUpdate = () => {
+    onUpdate()
+    router.refresh()
+  }
+
   if (isLoading) {
     return (
       <Table>
@@ -131,7 +145,7 @@ export function ApplicationsTable({
                   <ApplicationDialog
                     mode="edit"
                     initialData={application}
-                    onSuccess={onUpdate}
+                    onSuccess={handleUpdate}
                     trigger={
                       <Button variant="ghost" size="icon">
                         <Pencil className="h-4 w-4" />
@@ -154,7 +168,7 @@ export function ApplicationsTable({
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => onDelete(application.id)}
+                          onClick={() => handleDelete(application.id)}
                           className="bg-destructive hover:bg-destructive/90"
                         >
                           Delete
