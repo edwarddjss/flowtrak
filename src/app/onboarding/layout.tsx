@@ -1,26 +1,30 @@
-import { headers } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from "@/auth"
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export default async function OnboardingLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
+  const session = await auth()
   if (!session) {
     redirect('/auth/signin')
   }
 
-  // If user is not new or has completed onboarding, redirect to dashboard
-  if (!session.user.user_metadata.isNewUser) {
+  // If user already has a profile, redirect to dashboard
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .single()
+
+  if (profile) {
     redirect('/dashboard')
   }
 

@@ -1,11 +1,16 @@
-import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
+import { auth } from "@/auth"
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 // Use Node runtime since we're using Supabase
 export const runtime = "nodejs"
 export const dynamic = 'force-dynamic'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 const applicationSchema = z.object({
   company: z.string().min(1),
@@ -20,18 +25,15 @@ const applicationSchema = z.object({
 
 export async function GET() {
   try {
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const session = await auth()
+    if (!session?.user) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
 
     const { data: applications, error } = await supabase
       .from('applications')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', session.user.id)
       .order('applied_date', { ascending: false })
 
     if (error) throw error
@@ -45,11 +47,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const session = await auth()
+    if (!session?.user) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
 
@@ -61,7 +60,7 @@ export async function POST(req: Request) {
       .from('applications')
       .insert({
         ...rest,
-        user_id: user.id,
+        user_id: session.user.id,
         salary: salary ? parseFloat(salary) : null,
       })
       .select()
@@ -81,11 +80,8 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const session = await auth()
+    if (!session?.user) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
 
@@ -106,7 +102,7 @@ export async function PUT(req: Request) {
         salary: salary ? parseFloat(salary) : null,
       })
       .eq('id', id)
-      .eq('user_id', user.id)
+      .eq('user_id', session.user.id)
       .select()
       .single()
 
@@ -124,11 +120,8 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const session = await auth()
+    if (!session?.user) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
 
@@ -142,7 +135,7 @@ export async function DELETE(req: Request) {
       .from('applications')
       .delete()
       .eq('id', id)
-      .eq('user_id', user.id)
+      .eq('user_id', session.user.id)
 
     if (error) throw error
 

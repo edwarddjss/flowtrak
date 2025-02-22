@@ -2,9 +2,16 @@ import NextAuth from "next-auth"
 import Google from "next-auth/providers/google"
 import { createClient } from "@supabase/supabase-js"
 
+// Initialize Supabase client with service role key for admin access
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
 )
 
 export const { auth, signIn, signOut } = NextAuth({
@@ -54,14 +61,14 @@ export const { auth, signIn, signOut } = NextAuth({
       return false
     },
     async session({ session, token }) {
-      if (session?.user) {
+      if (session.user) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("*")
           .eq("email", session.user.email)
           .single()
 
-        session.user.id = token.sub as string
+        session.user.id = profile?.id || token.sub || session.user.id
         session.user.profile = profile
       }
       return session
