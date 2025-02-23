@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Application } from '@/types'
-import { AddApplicationDialog } from './add-application-dialog'
+import { AddApplicationDialog } from '@/components/application-dialog'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
