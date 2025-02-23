@@ -3,20 +3,13 @@
 import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Application } from '@/types'
-import { AddApplicationDialog } from '@/components/application-dialog'
-import { Button } from '@/components/ui/button'
-import { ChevronLeft, Menu } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useMediaQuery } from '@/lib/hooks/use-media-query'
-import { useRouter, usePathname } from 'next/navigation'
-import Link from 'next/link'
-import * as motion from 'framer-motion'
+import { ApplicationDialog } from '@/components/application-dialog'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ApplicationsTable } from './applications-table'
 import { InternshipSankey } from './InternshipSankey'
-import { RecentActivity } from './recent-activity'
 import { refreshApplicationsAction, deleteApplicationAction } from '@/app/actions'
 
-export default function DashboardContent() {
+export function DashboardContent() {
   const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -62,7 +55,13 @@ export default function DashboardContent() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <motion.div 
+      className="h-full flex flex-col"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <div className="flex-none px-6 py-4 border-b">
         <div className="flex items-center justify-between">
           <div>
@@ -72,18 +71,25 @@ export default function DashboardContent() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <AddApplicationDialog onSuccess={handleAddSuccess} />
+            <ApplicationDialog onSuccess={handleAddSuccess} />
           </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-auto">
         <div className="p-6 space-y-6">
-          {error && (
-            <div className="bg-destructive/15 text-destructive px-4 py-3 rounded-lg">
-              {error}
-            </div>
-          )}
+          <AnimatePresence mode="wait">
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="bg-destructive/15 text-destructive px-4 py-3 rounded-lg"
+              >
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
           
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Application Flow</h2>
@@ -101,6 +107,6 @@ export default function DashboardContent() {
           </Card>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

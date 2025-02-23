@@ -60,16 +60,26 @@ const handler = NextAuth({
       }
     },
     async session({ session, token }) {
-      if (session?.user) {
-        session.user.id = token.sub as string
+      try {
+        if (session?.user && token.sub) {
+          session.user.id = token.sub
+        }
+        return session
+      } catch (error) {
+        console.error('Error in session callback:', error)
+        return session
       }
-      return session
     },
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
+      try {
+        if (user?.id) {
+          token.sub = user.id
+        }
+        return token
+      } catch (error) {
+        console.error('Error in jwt callback:', error)
+        return token
       }
-      return token
     }
   },
   pages: {
@@ -78,7 +88,8 @@ const handler = NextAuth({
     signOut: "/auth/signout"
   },
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60 // 30 days
   }
 })
 
