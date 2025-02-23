@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { signIn } from "next-auth/react"
 import { useUser } from "@/hooks/use-user"

@@ -17,58 +17,20 @@ const nextConfig = {
   swcMinify: true,
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'flowtrak.vercel.app'],
+      allowedOrigins: ['localhost:3000', 'flowtrak.vercel.app', 'www.flowtrak.app'],
     },
-  },
-  images: {
-    formats: ['image/avif', 'image/webp'],
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**.supabase.co',
-      },
-    ],
-  },
-  logging: {
-    fetches: {
-      fullUrl: true,
-    },
+    optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react'],
+    serverComponentsExternalPackages: [],
   },
   webpack: (config, { dev, isServer }) => {
-    // Enable source maps
-    if (!config.optimization) {
-      config.optimization = {}
+    // Add resolve aliases
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': require('path').resolve(__dirname, './src'),
     }
-    config.optimization.minimize = true
 
-    // Optimize client-side bundles
-    if (!isServer) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          minSize: 20000,
-          maxSize: 244000,
-          minChunks: 1,
-          maxAsyncRequests: 30,
-          maxInitialRequests: 30,
-          cacheGroups: {
-            defaultVendors: {
-              test: /[\\/]node_modules[\\/]/,
-              priority: -10,
-              reuseExistingChunk: true,
-            },
-            default: {
-              minChunks: 2,
-              priority: -20,
-              reuseExistingChunk: true,
-            },
-          },
-        },
-      }
-    }
     return config
-  },
+  }
 }
 
 module.exports = nextConfig

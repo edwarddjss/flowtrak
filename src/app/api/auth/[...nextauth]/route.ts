@@ -13,11 +13,18 @@ const supabase = createClient(
   }
 )
 
-export const { auth, signIn, signOut } = NextAuth({
+const handler = NextAuth({
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
     }),
   ],
   callbacks: {
@@ -92,6 +99,5 @@ export const { auth, signIn, signOut } = NextAuth({
   },
 })
 
-import { GET, POST } from "@/auth"
-
-export { GET, POST }
+export const GET = handler.GET
+export const POST = handler.POST

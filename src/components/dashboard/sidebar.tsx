@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Home
+  Home,
+  Chart
 } from 'lucide-react'
 import { RecentActivity } from '@/components/recent-activity'
 import { useUser } from '@/lib/hooks/use-user'
@@ -25,6 +26,18 @@ const sidebarItems = [
     icon: LayoutDashboard,
     href: '/dashboard',
     description: 'Overview of your applications'
+  },
+  {
+    title: 'Applications',
+    icon: Home,
+    href: '/dashboard/applications',
+    description: 'Manage your job applications'
+  },
+  {
+    title: 'Analytics',
+    icon: Chart,
+    href: '/dashboard/analytics',
+    description: 'View your application analytics'
   },
   {
     title: 'Settings',
