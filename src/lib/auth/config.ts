@@ -2,22 +2,12 @@ import { type DefaultSession, type NextAuthConfig } from "next-auth"
 import Google from "next-auth/providers/google"
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
-// Define our custom types
-declare module "next-auth" {
-  interface Session extends DefaultSession {
-    user: {
-      id?: string
-      email?: string | null
-      name?: string | null
-      image?: string | null
-    }
-  }
+// Initialize Supabase client for auth operations
+const supabase = createClientComponentClient()
 
+// Add custom properties to User and JWT
+declare module "next-auth" {
   interface User {
-    id?: string
-    email?: string | null
-    name?: string | null
-    image?: string | null
     is_verified?: boolean
     is_admin?: boolean
   }
@@ -25,12 +15,10 @@ declare module "next-auth" {
 
 declare module "next-auth/jwt" {
   interface JWT {
-    id: string
+    is_verified?: boolean
+    is_admin?: boolean
   }
 }
-
-// Initialize Supabase client for auth operations
-const supabase = createClientComponentClient()
 
 export const authConfig: NextAuthConfig = {
   providers: [
@@ -64,83 +52,63 @@ export const authConfig: NextAuthConfig = {
   },
   callbacks: {
     async signIn({ user, account }) {
-      if (!user.email) return false
+      if (!user?.email) {
+        console.error('No email provided by Google')
+        return false
+      }
 
       try {
-        if (account?.provider === "google") {
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("email", user.email)
-            .single()
+        const { data: existingUser, error: queryError } = await supabase
+          .from('profiles')
+          .select()
+          .eq('email', user.email)
+          .single()
 
-          if (profileError && profileError.code !== "PGRST116") {
-            console.error("Error checking profile:", profileError)
+        if (queryError && queryError.code !== 'PGRST116') {
+          console.error('Error querying user:', queryError)
+          return false
+        }
+
+        if (!existingUser) {
+          const { error: createError } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                email: user.email,
+                name: user.name || '',
+                avatar_url: user.image || '',
+                auth_provider: 'google',
+              },
+            ])
+
+          if (createError) {
+            console.error('Error creating user:', createError)
             return false
-          }
-
-          if (!profile) {
-            // Generate a UUID for the user if one doesn't exist
-            const userId = user.id || crypto.randomUUID()
-            
-            const { error: insertError } = await supabase
-              .from("profiles")
-              .insert([
-                {
-                  id: userId,
-                  email: user.email,
-                  is_verified: true,
-                  is_admin: false,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                },
-              ])
-
-            if (insertError) {
-              console.error("Error creating profile:", insertError)
-              return false
-            }
-
-            // Assign the generated ID back to the user
-            user.id = userId
-            user.is_verified = true
-            user.is_admin = false
-          } else {
-            // Use the existing profile ID and data
-            user.id = profile.id
-            user.is_verified = profile.is_verified
-            user.is_admin = profile.is_admin
           }
         }
 
         return true
       } catch (error) {
-        console.error("Error in signIn callback:", error)
+        console.error('Error in signIn callback:', error)
         return false
       }
     },
-    async jwt({ token, user }) {
-      // Only set the id if we have a user with an id during sign in
-      if (user && typeof user.id === 'string') {
-        return {
-          ...token,
-          id: user.id
-        }
+    async jwt({ token, user, trigger }) {
+      if (trigger === "signIn" && user?.id) {
+        token.sub = user.id
+        token.is_verified = user.is_verified
+        token.is_admin = user.is_admin
       }
       return token
     },
     async session({ session, token }) {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id,
-          email: session.user?.email || null,
-          name: session.user?.name || null,
-          image: session.user?.image || null
-        }
+      if (session?.user && token?.sub) {
+        session.user.id = token.sub
+        session.user.is_verified = token.is_verified as boolean | undefined
+        session.user.is_admin = token.is_admin as boolean | undefined
       }
-    },
+      return session
+    }
   },
   pages: {
     signIn: "/auth/signin",
