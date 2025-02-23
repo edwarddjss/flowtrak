@@ -32,72 +32,54 @@ const handler = NextAuth({
       if (!user.email) return false
 
       try {
-        if (account?.provider === "google") {
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("email", user.email)
-            .single()
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select()
+          .eq('email', user.email)
+          .single()
 
-          if (profileError && profileError.code !== "PGRST116") {
-            console.error("Error checking profile:", profileError)
-            return false
-          }
+        if (!existingUser) {
+          const { error: createError } = await supabase
+            .from('users')
+            .insert([
+              {
+                email: user.email,
+                name: user.name,
+                avatar_url: user.image,
+                auth_provider: 'google',
+              },
+            ])
 
-          if (!profile) {
-            // Generate a UUID for the user if one doesn't exist
-            const userId = user.id || crypto.randomUUID()
-            
-            const { error: insertError } = await supabase
-              .from("profiles")
-              .insert([
-                {
-                  id: userId,
-                  email: user.email,
-                  is_verified: true,
-                  is_admin: false,
-                },
-              ])
-
-            if (insertError) {
-              console.error("Error creating profile:", insertError)
-              return false
-            }
-
-            // Assign the generated ID back to the user
-            user.id = userId
-          } else {
-            // Use the existing profile ID
-            user.id = profile.id
-          }
+          if (createError) throw createError
         }
+
         return true
       } catch (error) {
-        console.error("Error in signIn callback:", error)
+        console.error('Error in signIn callback:', error)
         return false
       }
     },
-    async jwt({ token, user }) {
-      if (user?.id) {
-        token.id = user.id
-      }
-      return token
-    },
     async session({ session, token }) {
-      if (session.user && token.id) {
-        session.user.id = token.id
+      if (session?.user) {
+        session.user.id = token.sub as string
       }
       return session
     },
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+      }
+      return token
+    }
   },
   pages: {
     signIn: "/auth/signin",
+    error: "/auth/error",
+    signOut: "/auth/signout"
   },
   session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
+    strategy: "jwt"
+  }
 })
 
-export const GET = handler.GET
-export const POST = handler.POST
+export { handler as GET, handler as POST }
