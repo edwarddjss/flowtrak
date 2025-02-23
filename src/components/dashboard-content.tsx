@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Application } from '@/types'
 import { ApplicationDialog } from '@/components/application-dialog'
-import { motion as m, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ApplicationsTable } from './applications-table'
 import { InternshipSankey } from './InternshipSankey'
 import { refreshApplicationsAction, deleteApplicationAction } from '@/app/actions'
@@ -55,7 +55,7 @@ export function DashboardContent() {
   }
 
   return (
-    <m.div 
+    <motion.div 
       className="h-full flex flex-col"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -80,14 +80,14 @@ export function DashboardContent() {
         <div className="p-6 space-y-6">
           <AnimatePresence mode="wait">
             {error && (
-              <m.div 
+              <motion.div 
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 className="bg-destructive/15 text-destructive px-4 py-3 rounded-lg"
               >
                 {error}
-              </m.div>
+              </motion.div>
             )}
           </AnimatePresence>
           
@@ -107,6 +107,6 @@ export function DashboardContent() {
           </Card>
         </div>
       </div>
-    </m.div>
+    </motion.div>
   )
 }
