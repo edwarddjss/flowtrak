@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Application } from '@/types'
-import { refreshApplicationsAction } from '@/app/actions'
+import { Application } from '@/app/client-actions'
+import { refreshApplicationsAction } from '@/app/client-actions'
 import { formatDate } from '@/lib/utils'
 import { Badge } from './ui/badge'
 import { CompanyAvatar } from './ui/company-avatar'

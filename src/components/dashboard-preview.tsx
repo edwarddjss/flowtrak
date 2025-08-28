@@ -22,7 +22,7 @@ const mockApplications = [
     company: 'Microsoft',
     position: 'Software Engineer',
     location: 'Redmond, WA',
-    status: 'interview',
+    status: 'interviewing',
     applied_date: '2024-02-14',
     created_at: '2024-02-14',
     user_id: '1'

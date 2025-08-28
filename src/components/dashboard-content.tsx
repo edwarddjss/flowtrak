@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
-import { Application } from '@/types'
+import { Application } from '@/app/client-actions'
 import { ApplicationDialog } from '@/components/application-dialog'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ApplicationsTable } from './applications-table'
 import { InternshipSankey } from './InternshipSankey'
-import { refreshApplicationsAction, deleteApplicationAction } from '@/app/actions'
+import { refreshApplicationsAction, deleteApplicationAction } from '@/app/client-actions'
 
 export function DashboardContent() {
   const [applications, setApplications] = useState<Application[]>([])

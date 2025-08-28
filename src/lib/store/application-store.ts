@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import { Application } from '@/types'
 import { type NewApplication } from '@/lib/hooks/use-applications'
 
+// Fixed user ID to use for all operations
+const FIXED_USER_ID = 'demo-user'
+
 interface ApplicationState {
   applications: Application[]
   setApplications: (applications: Application[]) => void
@@ -13,12 +16,14 @@ interface ApplicationState {
 export const useApplicationStore = create<ApplicationState>((set) => ({
   applications: [],
   setApplications: (applications) => set({ applications }),
-  addApplication: (application) =>
+  addApplication: (application) => 
     set((state) => ({
       applications: [...state.applications, {
-        ...application,
+        ...application as any,
         id: crypto.randomUUID(),
-        user_id: 'demo' // TODO: Replace with actual user_id from auth
+        user_id: FIXED_USER_ID,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }],
     })),
   updateApplication: (id, updatedApplication) =>

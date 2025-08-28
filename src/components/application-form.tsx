@@ -32,7 +32,8 @@ import {
 } from './ui/popover'
 import { Calendar } from './ui/calendar'
 import { useToast } from './ui/use-toast'
-import type { Application } from '@/types'
+import type { Application, FormValues } from '@/app/client-actions'
+import { createOrUpdateApplicationAction } from '@/app/client-actions'
 
 const formSchema = z.object({
   company: z.string().min(1, 'Company is required'),
@@ -55,7 +56,6 @@ interface ApplicationFormProps {
 
 export function ApplicationForm({ initialData, mode = 'create', onSuccess }: ApplicationFormProps) {
   const { toast } = useToast()
-  const supabase = createClientComponentClient()
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -74,27 +74,11 @@ export function ApplicationForm({ initialData, mode = 'create', onSuccess }: App
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      if (mode === 'edit' && initialData?.id) {
-        const { error } = await supabase
-          .from('applications')
-          .update({
-            ...values,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', initialData.id)
-
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('applications')
-          .insert({
-            ...values,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-
-        if (error) throw error
-      }
+      // Use the server action instead of direct Supabase call
+      await createOrUpdateApplicationAction({
+        ...values,
+        id: initialData?.id
+      })
 
       toast({
         title: `Application ${mode === 'create' ? 'created' : 'updated'} successfully`,
@@ -194,7 +178,7 @@ export function ApplicationForm({ initialData, mode = 'create', onSuccess }: App
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-[240px] pl-3 text-left font-normal",
+                        "w-full h-10 pl-3 text-left font-normal",
                         !field.value && "text-muted-foreground"
                       )}
                     >
@@ -236,7 +220,7 @@ export function ApplicationForm({ initialData, mode = 'create', onSuccess }: App
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-[240px] pl-3 text-left font-normal",
+                        "w-full h-10 pl-3 text-left font-normal",
                         !field.value && "text-muted-foreground"
                       )}
                     >

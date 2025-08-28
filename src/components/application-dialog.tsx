@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from './ui/dialog'
 import { ApplicationForm } from './application-form'
-import type { Application } from '@/types'
+import type { Application } from '@/app/client-actions'
 
 interface ApplicationDialogProps {
   trigger?: React.ReactNode

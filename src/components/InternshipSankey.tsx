@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { ResponsiveSankey } from '@nivo/sankey'
-import { Application } from '@/types'
+import { Application } from '@/app/client-actions'
 import { Card } from './ui/card'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -17,10 +17,10 @@ export function InternshipSankey({ applications = [], isLoading }: InternshipSan
     if (!applications?.length) {
       return {
         nodes: [
-          { id: 'Applied', nodeColor: '#3B82F6', label: 'Applied' },
-          { id: 'Interview', nodeColor: '#8B5CF6', label: 'Interview' },
-          { id: 'Offer', nodeColor: '#22C55E', label: 'Offer' },
-          { id: 'Rejected', nodeColor: '#EF4444', label: 'Rejected' }
+          { id: 'Applied', nodeColor: '#3B82F6', label: 'Applied', value: 0 },
+          { id: 'Interview', nodeColor: '#8B5CF6', label: 'Interview', value: 0 },
+          { id: 'Offer', nodeColor: '#22C55E', label: 'Offer', value: 0 },
+          { id: 'Rejected', nodeColor: '#EF4444', label: 'Rejected', value: 0 }
         ],
         links: [
           { source: 'Applied', target: 'Interview', value: 0.1 },
@@ -28,6 +28,14 @@ export function InternshipSankey({ applications = [], isLoading }: InternshipSan
           { source: 'Interview', target: 'Offer', value: 0.1 }
         ]
       }
+    }
+
+    // Create node map for counting
+    const nodeValues: { [key: string]: number } = {
+      'Applied': 0,
+      'Interview': 0,
+      'Offer': 0,
+      'Rejected': 0
     }
 
     const nodes = [
@@ -39,8 +47,10 @@ export function InternshipSankey({ applications = [], isLoading }: InternshipSan
 
     const statusMap = {
       applied: 'Applied',
+      interviewing: 'Interview',
       interview: 'Interview',
       offer: 'Offer',
+      accepted: 'Offer',
       rejected: 'Rejected'
     }
 
@@ -50,6 +60,9 @@ export function InternshipSankey({ applications = [], isLoading }: InternshipSan
       const currentStatus = statusMap[app.status.toLowerCase() as keyof typeof statusMap] || 'Applied'
       const prevStatus = app.previous_status ? 
         statusMap[app.previous_status.toLowerCase() as keyof typeof statusMap] : null
+
+      // Count nodes
+      nodeValues[currentStatus] = (nodeValues[currentStatus] || 0) + 1
 
       if (prevStatus) {
         const key = `${prevStatus}->${currentStatus}`
@@ -62,12 +75,18 @@ export function InternshipSankey({ applications = [], isLoading }: InternshipSan
       }
     })
 
+    // Apply counts to nodes
+    nodes.forEach(node => {
+      node.value = nodeValues[node.id] || 0
+    })
+
+    // Create links with value of at least 0.5 for visibility
     const links = Object.entries(transitions).map(([key, value]) => {
       const [source, target] = key.split('->')
       return {
         source,
         target,
-        value: Math.max(value, 0.1) // Ensure minimum value for visibility
+        value: Math.max(value, 0.5) // Ensure minimum value for visibility
       }
     })
 
@@ -78,7 +97,7 @@ export function InternshipSankey({ applications = [], isLoading }: InternshipSan
           links.push({
             source: 'Applied',
             target: node.id,
-            value: 0.1
+            value: 0.5
           })
         }
       }
@@ -105,47 +124,74 @@ export function InternshipSankey({ applications = [], isLoading }: InternshipSan
         margin={{ top: 40, right: 160, bottom: 40, left: 160 }}
         align="justify"
         colors={node => node.nodeColor}
-        nodeOpacity={0.8}
+        nodeOpacity={0.9}
+        nodeHoverOpacity={1}
         nodeHoverOthersOpacity={0.35}
         nodeThickness={18}
         nodeSpacing={24}
         nodeBorderWidth={0}
-        nodeBorderRadius={3}
+        nodeBorderRadius={4}
         linkOpacity={0.5}
+        linkHoverOpacity={0.8}
         linkHoverOthersOpacity={0.1}
-        linkBlendMode="multiply"
+        linkBlendMode="normal"
         enableLinkGradient={true}
-        label={node => node.label}
+        label={node => `${node.label} (${node.value || 0})`}
         labelPosition="outside"
         labelOrientation="horizontal"
         labelPadding={16}
         labelTextColor={{ from: 'color', modifiers: [['darker', 1]] }}
         animate={true}
-        motionConfig="gentle"
+        motionConfig={{
+          mass: 1,
+          tension: 120,
+          friction: 26,
+          clamp: false,
+          precision: 0.01,
+          velocity: 0
+        }}
         tooltip={({ node, link }) => (
-          <div className="rounded-lg border bg-card px-3 py-2 text-sm shadow-lg">
+          <div className="rounded-lg border bg-card px-4 py-3 shadow-xl transition-all">
             {node && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <div 
-                  className="h-3 w-3 rounded-full" 
+                  className="h-4 w-4 rounded-full" 
                   style={{ backgroundColor: node.nodeColor }} 
                 />
                 <div>
-                  <span className="font-medium">{node.label}</span>
-                  <span className="text-muted-foreground"> • </span>
-                  <span className="text-muted-foreground">{node.value || 0} applications</span>
+                  <span className="font-semibold">{node.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">{node.value || 0} applications</span>
+                    {node.id !== 'Applied' && (
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted">
+                        {Math.round(((node.value || 0) / applications.length) * 100)}%
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
             {link && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-medium">{link.source}</span>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="h-3 w-3 rounded-full" 
+                    style={{ backgroundColor: nodes.find(n => n.id === link.source)?.nodeColor }} 
+                  />
+                  <span className="font-semibold">{link.source}</span>
                   <span className="text-muted-foreground">→</span>
-                  <span className="font-medium">{link.target}</span>
+                  <div 
+                    className="h-3 w-3 rounded-full" 
+                    style={{ backgroundColor: nodes.find(n => n.id === link.target)?.nodeColor }} 
+                  />
+                  <span className="font-semibold">{link.target}</span>
                 </div>
-                <span className="text-muted-foreground">•</span>
-                <span className="text-muted-foreground">{Math.round(link.value)} applications</span>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground pl-1">
+                  <span>{Math.round(link.value)} applications</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted">
+                    {Math.round((link.value / applications.length) * 100)}% of total
+                  </span>
+                </div>
               </div>
             )}
           </div>

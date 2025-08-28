@@ -13,30 +13,46 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useUser } from "@/hooks/use-user"
-import { signOut } from "next-auth/react"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 
 export function UserNav() {
-  const { user, profile } = useUser()
+  const { user, profile, isLoading } = useUser()
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+    )
+  }
 
   if (!user) return null
+
+  const userName = user.user_metadata?.name || user.email?.split('@')[0] || 'User'
+  const userEmail = user.email || ''
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user.image || ''} alt={user.name || ''} />
-            <AvatarFallback>{user.name?.[0]}</AvatarFallback>
+            <AvatarFallback>{userName[0]?.toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name}</p>
+            <p className="text-sm font-medium leading-none">{userName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
+              {userEmail}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -46,7 +62,7 @@ export function UserNav() {
             <Link href="/dashboard">Dashboard</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/settings">Settings</Link>
+            <Link href="/dashboard/settings">Settings</Link>
           </DropdownMenuItem>
           {profile?.is_admin && (
             <DropdownMenuItem asChild>
@@ -57,7 +73,7 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer"
-          onClick={() => signOut({ callbackUrl: '/' })}
+          onClick={handleSignOut}
         >
           Log out
           <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>

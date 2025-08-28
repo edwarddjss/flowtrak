@@ -1,13 +1,8 @@
 import { create } from 'zustand'
 import { Application } from '@/types'
-import { createClient } from '@supabase/supabase-js'
-import { useSession } from 'next-auth/react'
+import { createClient } from '@/lib/supabase/client'
+import { useUser } from '@/hooks/use-user'
 import { useEffect } from 'react'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export type NewApplication = Omit<Application, 'id' | 'user_id' | 'created_at' | 'updated_at'>
 
@@ -30,6 +25,7 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => ({
     try {
       set({ isLoading: true })
       
+      const supabase = createClient()
       const { data, error } = await supabase
         .from('applications')
         .select('*')
@@ -49,6 +45,7 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => ({
     const currentData = get().data || []
     
     try {
+      const supabase = createClient()
       const { data, error } = await supabase
         .from('applications')
         .insert([{ ...application, user_id: userId }])
@@ -66,6 +63,7 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => ({
     const currentData = get().data || []
     
     try {
+      const supabase = createClient()
       const { data, error } = await supabase
         .from('applications')
         .update(updates)
@@ -87,6 +85,7 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => ({
     const currentData = get().data || []
     
     try {
+      const supabase = createClient()
       const { error } = await supabase
         .from('applications')
         .delete()
@@ -103,16 +102,16 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => ({
   }
 }))
 
-// Hook to use applications with session
+// Hook to use applications with Supabase auth
 export function useApplications() {
-  const { data: session } = useSession()
+  const { user } = useUser()
   const store = useApplicationStore()
   
   useEffect(() => {
-    if (session?.user?.id) {
-      store.fetchApplications(session.user.id)
+    if (user?.id) {
+      store.fetchApplications(user.id)
     }
-  }, [session?.user?.id])
+  }, [user?.id])
 
   return store
 }

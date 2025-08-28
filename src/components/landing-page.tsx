@@ -2,10 +2,8 @@
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { signIn } from "next-auth/react"
-import { useUser } from "@/hooks/use-user"
-import { redirect } from "next/navigation"
 import Link from "next/link"
+import { motion } from "framer-motion"
 import { DashboardPreview } from "./dashboard-preview"
 import { ModeToggle } from "./mode-toggle"
 import { ChromeExtensionPromo } from "./chrome-extension-promo"
@@ -17,16 +15,6 @@ import { Footer } from "./landing/footer"
 import { CustomAvatar } from './ui/custom-avatar'
 
 export function LandingPage() {
-  const { user, isLoading } = useUser()
-
-  if (isLoading) {
-    return <div>Loading...</div>
-  }
-
-  if (user) {
-    redirect('/dashboard')
-  }
-
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Navigation */}
@@ -59,11 +47,8 @@ export function LandingPage() {
           </div>
           <div className="flex items-center gap-4">
             <ModeToggle />
-            <Button variant="ghost" asChild>
-              <Link href="/auth/signin">Log in</Link>
-            </Button>
             <Button asChild>
-              <Link href="/auth/signin?signup=true">Try for free</Link>
+              <Link href="/dashboard">Go to Dashboard</Link>
             </Button>
           </div>
         </div>
@@ -118,7 +103,7 @@ export function LandingPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button size="lg" asChild>
-              <Link href="/auth/signin?signup=true&redirect=/onboarding">Get started for free</Link>
+              <Link href="/dashboard">Get Started Now</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
               <Link href="#features">See how it works</Link>

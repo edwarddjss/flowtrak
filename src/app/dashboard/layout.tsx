@@ -1,5 +1,5 @@
 import { SideNav } from "@/components/side-nav"
-import { auth } from "@/auth"
+import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
 // Prevent static generation for dashboard pages
@@ -10,8 +10,14 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await auth()
-  if (!session?.user) {
+  const supabase = createClient()
+  
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+  
+  if (error || !user) {
     redirect('/auth/signin')
   }
 
